@@ -2,6 +2,15 @@ var sin = Math.sin;
 function random(low,high) { 
 	return low + Math.random() * (high-low)
 }
+function rint(low,high) {
+	return Math.floor(random(low,high));
+}
+function range(low,high) {
+	var r = [];
+	for (var i = low; i < high; i++)
+		r.push(i);
+	return r;
+}
 function map(seq,fn) {
 	var transformed = [];
 	for (var p in seq)
@@ -9,47 +18,101 @@ function map(seq,fn) {
 	return transformed;
 }
 
-/*function cls(proto) {
-	map(proto, function(fn, p) {
-		if (typeof fn == 'function')
-			proto[p] = function() {
-				return fn.apply(fn, [this].concat([].slice.call(arguments)));
-			}
-	});
-	return function() {
-		var object = {};
-		proto.i.apply(object, arguments);
-		object.__proto__ = proto;
-		return object;
-	}
-}
+// ==========================================================
+// This part of the code deals with procedural map generation
+// prior to gameplay.
+// ==========================================================
 
-var Region = cls({
-	i: function(self, points) {
-		self.p = points;
-	}
-});*/
+var blockSize = 25, 
+		mapWidth = 30, 
+		mapHeight = 20, 
+		maxRegionSize = 8,
+		neededRegions = 20;
 
-var regionSize = 100, pointCount = 4;
 function generateRegions() {
-	var perturbConst = random(1.0,2.0);
-	return [makeRegionAt(1,0), makeRegionAt(2,0), makeRegionAt(2,1)];
+	var perturbConst = random(1.0, 2.0);
+	var regionMap = range(0,mapWidth).map(function(){return []});
+	var regions = [], count = 0;
+
+	while(count < neededRegions) {
+		var bounds = {
+			l: rint(1, mapWidth-maxRegionSize-1),
+			t: rint(1, mapHeight-maxRegionSize-1),
+			w: rint(1, maxRegionSize), h: rint(1, maxRegionSize)
+		}; 
+		if (count && !overlaps(bounds)) continue;
+		
+		while(1) {
+			if (shrink(bounds))
+				break;
+			if (!overlaps(bounds)) {
+				regions.push(makeRegionAt(bounds));
+				count++;
+				break;
+			}
+		}
+	}
+
+	return regions;
+
+	function forEachBlockOfRegion(bounds,fn) {
+		var returnValue = false;
+		with(bounds) {
+			map(range(l,l+w), function(x){
+				map(range(t,t+h), function(y){
+					returnValue = returnValue || fn(x,y);
+				});
+			});
+		}
+		return returnValue;
+	}	
 	
-	function perturb(x,y) {
+	function shrink(bounds) {
+		var r = rint(0,4);
+		if (r % 2) bounds.w--; else bounds.h--;
+		if (r == 2) bounds.l++;
+		if (r == 3) bounds.t++;
+		if (bounds.w * bounds.h < 5)
+			return true;
+	}
+
+	function overlaps(bounds) {
+		return forEachBlockOfRegion(bounds,function(x,y){
+			return regionMap[x][y];
+		});
+	}
+
+	function makeRegionAt(bounds) {
+		// make points for the region
+		with(bounds) {
+			var points = [];
+			for (var i = 0; i < w; i++) {
+				points[i] = perturbedPoint(l+i,t);
+				points[w+h+i] = perturbedPoint(l+w-i,t+h);
+			}
+			for (i = 0; i < h; i++) {
+				points[w+i] = perturbedPoint(l+w,t+i);
+				points[w+h+w+i] = perturbedPoint(l,t+h-i);
+			}
+			var region = {p: points};
+			
+			// mark it in the map
+			forEachBlockOfRegion(bounds,function(x,y){
+				regionMap[x][y] = region;
+			});
+
+			// return
+			return region;
+		}
+	}
+
+	function perturbedPoint(x,y) {
+		x *= blockSize; y *= blockSize;
 		var angle = (sin(x*y+perturbConst*357)) * 180.0;
-		var dist = (sin(x*y+perturbConst*211)) * regionSize / pointCount / 2;
+		var dist = (sin(x*y+perturbConst*211)) * blockSize / 2;
 		return [x+sin(angle)*dist,y+Math.cos(angle)*dist];
 	}
-	function makeRegionAt(x,y) {
-		var points = [], xl = x * regionSize, yt = y * regionSize + x * regionSize / 2, inc = regionSize / pointCount;
-		for (var i = 0; i < pointCount; i++) {
-			points[i] = perturb(xl + inc*i, yt);
-			points[i+pointCount] = perturb(xl + inc*pointCount, yt+inc*i);
-			points[i+pointCount*2] = perturb(xl + inc*(pointCount-i), yt+inc*pointCount);
-			points[i+pointCount*3] = perturb(xl, yt+inc*(pointCount-i));
-		}
-		return {p: points};
-	}
+
 }
 
 function makeRegionSVGs(regions, container) {
@@ -57,7 +120,7 @@ function makeRegionSVGs(regions, container) {
 		map(regions, function(region) {
 			return "<polygon points='" + 
 				region.p.join(" ") + 
-				"'style='fill:gray;stroke:#000'></polygon>";
+				"'style='fill:rgba(127,127,127,0.5);stroke:#000'></polygon>";
 		}).join("") + 
 		"</svg>";
 }
