@@ -1,9 +1,6 @@
 var sin = Math.sin;
-function random(low,high) { 
-	return low + Math.random() * (high-low)
-}
 function rint(low,high) {
-	return Math.floor(random(low,high));
+	return Math.floor(low+Math.random()*(high-low));
 }
 function range(low,high) {
 	var r = [];
@@ -30,7 +27,7 @@ var blockSize = 25,
 		neededRegions = 20;
 
 function generateRegions() {
-	var perturbConst = random(1.0, 2.0);
+	var perturbConst = rint(0,100000);
 	var regionMap = range(0,mapWidth).map(function(){return []});
 	var regions = [], count = 0;
 
@@ -52,18 +49,16 @@ function generateRegions() {
 			}
 		}
 	}
-
 	return regions;
 
 	function forEachBlockOfRegion(bounds,fn) {
 		var returnValue = false;
-		with(bounds) {
-			map(range(l,l+w), function(x){
-				map(range(t,t+h), function(y){
-					returnValue = returnValue || fn(x,y);
-				});
+		var l=bounds.l,t=bounds.t,w=bounds.w,h=bounds.h;
+		map(range(l,l+w), function(x){
+			map(range(t,t+h), function(y){
+				returnValue = returnValue || fn(x,y);
 			});
-		}
+		});
 		return returnValue;
 	}	
 	
@@ -72,8 +67,7 @@ function generateRegions() {
 		if (r % 2) bounds.w--; else bounds.h--;
 		if (r == 2) bounds.l++;
 		if (r == 3) bounds.t++;
-		if (bounds.w * bounds.h < 5)
-			return true;
+		return (bounds.w * bounds.h < 5);
 	}
 
 	function overlaps(bounds) {
@@ -84,26 +78,25 @@ function generateRegions() {
 
 	function makeRegionAt(bounds) {
 		// make points for the region
-		with(bounds) {
-			var points = [];
-			for (var i = 0; i < w; i++) {
-				points[i] = perturbedPoint(l+i,t);
-				points[w+h+i] = perturbedPoint(l+w-i,t+h);
-			}
-			for (i = 0; i < h; i++) {
-				points[w+i] = perturbedPoint(l+w,t+i);
-				points[w+h+w+i] = perturbedPoint(l,t+h-i);
-			}
-			var region = {p: points};
-			
-			// mark it in the map
-			forEachBlockOfRegion(bounds,function(x,y){
-				regionMap[x][y] = region;
-			});
-
-			// return
-			return region;
+		var l=bounds.l,t=bounds.t,w=bounds.w,h=bounds.h;
+		var points = [];
+		for (var i = 0; i < w; i++) {
+			points[i] = perturbedPoint(l+i,t);
+			points[w+h+i] = perturbedPoint(l+w-i,t+h);
 		}
+		for (i = 0; i < h; i++) {
+			points[w+i] = perturbedPoint(l+w,t+i);
+			points[w+h+w+i] = perturbedPoint(l,t+h-i);
+		}
+		var region = {p: points};
+		
+		// mark it in the map
+		forEachBlockOfRegion(bounds,function(x,y){
+			regionMap[x][y] = region;
+		});
+
+		// return
+		return region;
 	}
 
 	function perturbedPoint(x,y) {
