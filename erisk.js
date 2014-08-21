@@ -14,6 +14,11 @@ function map(seq,fn) {
 		transformed.push(fn(seq[p],p));
 	return transformed;
 }
+function for2d(x1,y1,x2,y2,fn) {
+	map(range(x1,x2), function(x) {
+		map(range(y1,y2), fn.bind(0,x));
+	});
+}
 
 // ==========================================================
 // This part of the code deals with procedural map generation
@@ -25,8 +30,7 @@ var blockSize = 25,
 		mapHeight = 20, 
 		maxRegionSize = 8,
 		neededRegions = 20;
-
-function generateRegions() {
+function generateRegions(container) {
 	var perturbConst = rint(0,100000);
 	var regionMap = range(0,mapWidth).map(function(){return []});
 	var regions = [], count = 0;
@@ -49,18 +53,11 @@ function generateRegions() {
 			}
 		}
 	}
-	return regions;
 
-	function forEachBlockOfRegion(bounds,fn) {
-		var returnValue = false;
-		var l=bounds.l,t=bounds.t,w=bounds.w,h=bounds.h;
-		map(range(l,l+w), function(x){
-			map(range(t,t+h), function(y){
-				returnValue = returnValue || fn(x,y);
-			});
-		});
-		return returnValue;
-	}	
+	fillNeighbourLists();
+	makeDOMElements();
+
+	return regions;
 	
 	function shrink(bounds) {
 		var r = rint(0,4);
@@ -71,27 +68,29 @@ function generateRegions() {
 	}
 
 	function overlaps(bounds) {
-		return forEachBlockOfRegion(bounds,function(x,y){
-			return regionMap[x][y];
+		var rv = false;
+		for2d(bounds.l, bounds.t, bounds.l+bounds.w, bounds.t+bounds.h, function(x,y) {
+			rv = rv || regionMap[x][y];
 		});
+		return rv;
 	}
 
 	function makeRegionAt(bounds) {
 		// make points for the region
 		var l=bounds.l,t=bounds.t,w=bounds.w,h=bounds.h;
 		var points = [];
-		for (var i = 0; i < w; i++) {
+		map(range(0,w), function(i) {
 			points[i] = perturbedPoint(l+i,t);
 			points[w+h+i] = perturbedPoint(l+w-i,t+h);
-		}
-		for (i = 0; i < h; i++) {
+		});
+		map(range(0,h), function(i) {
 			points[w+i] = perturbedPoint(l+w,t+i);
 			points[w+h+w+i] = perturbedPoint(l,t+h-i);
-		}
+		});
 		var region = {p: points};
 		
 		// mark it in the map
-		forEachBlockOfRegion(bounds,function(x,y){
+		for2d(bounds.l, bounds.t, bounds.l + bounds.w, bounds.t + bounds.h, function(x,y){
 			regionMap[x][y] = region;
 		});
 
@@ -106,17 +105,30 @@ function generateRegions() {
 		return [x+sin(angle)*dist,y+Math.cos(angle)*dist];
 	}
 
+	function fillNeighbourLists() {
+		for2d(1, 1, mapWidth-1, mapHeight-1, function(x,y) {
+			var region = regionMap[x][y];
+			if (region) {
+				if (!region.n) region.n = [];
+				for2d(-1,-1,2,2,function(dx,dy) {
+					var potentialNeighbour = regionMap[x+dx][y+dy];
+					if (potentialNeighbour && (potentialNeighbour != region) && (region.n.indexOf(potentialNeighbour) == -1))
+						region.n.push(potentialNeighbour);
+				});
+			}
+		});
+	}
+
+	function makeDOMElements() {
+		container.innerHTML = "<svg width='1000' height='1000'>" + 
+			map(regions, function(region) {
+				return "<polygon points='" + 
+					region.p.join(" ") + 
+					"'style='fill:rgba(127,127,127,0.5);stroke:#000'></polygon>";
+			}).join("") + 
+			"</svg>";		
+	}
 }
 
-function makeRegionSVGs(regions, container) {
-	container.innerHTML = "<svg width='1000' height='1000'>" + 
-		map(regions, function(region) {
-			return "<polygon points='" + 
-				region.p.join(" ") + 
-				"'style='fill:rgba(127,127,127,0.5);stroke:#000'></polygon>";
-		}).join("") + 
-		"</svg>";
-}
-
-makeRegionSVGs(generateRegions(), document.body);
+generateRegions(document.body);
 
