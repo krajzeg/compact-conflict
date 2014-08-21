@@ -124,11 +124,32 @@ function generateRegions(container) {
 			map(regions, function(region) {
 				return "<polygon points='" + 
 					region.p.join(" ") + 
-					"'style='fill:rgba(127,127,127,0.5);stroke:#000'></polygon>";
+					"'style='fill:#777;stroke:#000'></polygon>";
 			}).join("") + 
-			"</svg>";		
+			"</svg>";
+
+		var svg = document.querySelector('svg');
+		map(svg.children, function(polygon, index) {
+			var region = regions[index];
+			region.e = polygon;
+			polygon.onmouseover = regionMouseOver.bind(region,region);
+			polygon.onmouseout = regionMouseOut.bind(region,region);
+		});	
 	}
 }
 
-generateRegions(document.body);
+function regionMouseOver(region) {
+	region.e.style.fill="#faa";
+	map(region.n, function(neighbour) {
+		neighbour.e.style.fill="#f00";
+	});
+}
 
+function regionMouseOut(region) {
+	region.e.style.fill="#777";
+	map(region.n, function(neighbour) {
+		neighbour.e.style.fill="#777";
+	});
+}
+
+generateRegions(document.body);
