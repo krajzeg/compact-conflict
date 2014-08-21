@@ -9,10 +9,7 @@ function range(low,high) {
 	return r;
 }
 function map(seq,fn) {
-	var transformed = [];
-	for (var p in seq)
-		transformed.push(fn(seq[p],p));
-	return transformed;
+	return [].slice.call(seq).map(fn);
 }
 function for2d(x1,y1,x2,y2,fn) {
 	map(range(x1,x2), function(x) {
@@ -129,12 +126,12 @@ function generateRegions(container) {
 			"</svg>";
 
 		var svg = document.querySelector('svg');
-		map(svg.children, function(polygon, index) {
+		map(svg.childNodes, function(polygon, index) {
 			var region = regions[index];
 			region.e = polygon;
 			polygon.onmouseover = regionMouseOver.bind(region,region);
 			polygon.onmouseout = regionMouseOut.bind(region,region);
-		});	
+		});
 	}
 }
 
