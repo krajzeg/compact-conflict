@@ -27,7 +27,7 @@ var blockSize = 25,
 		mapHeight = 20, 
 		maxRegionSize = 8,
 		neededRegions = 20;
-function generateRegions(container) {
+function generateMap(container) {
 	var perturbConst = rint(0,100000);
 	var regionMap = range(0,mapWidth).map(function(){return []});
 	var regions = [], count = 0;
@@ -121,32 +121,42 @@ function generateRegions(container) {
 			map(regions, function(region) {
 				return "<polygon points='" + 
 					region.p.join(" ") + 
-					"'style='fill:#777;stroke:#000'></polygon>";
+					"'style='fill:#777;stroke:#000;'></polygon>";
 			}).join("") + 
 			"</svg>";
 
 		var svg = document.querySelector('svg');
 		map(svg.childNodes, function(polygon, index) {
 			var region = regions[index];
+			region.i = index;
 			region.e = polygon;
-			polygon.onmouseover = regionMouseOver.bind(region,region);
-			polygon.onmouseout = regionMouseOut.bind(region,region);
 		});
 	}
 }
 
-function regionMouseOver(region) {
-	region.e.style.fill="#faa";
-	map(region.n, function(neighbour) {
-		neighbour.e.style.fill="#f00";
-	});
+function makeInitialState(regions) {
+	var players = [{c: '#ff0'}, {c: '#00f'}];
+	return {
+		r: regions,
+		p: players,
+		o: {0: players[0], 19: players[1]},
+		t: {0: {}, 19: {}},
+		s: []
+	}
 }
 
-function regionMouseOut(region) {
-	region.e.style.fill="#777";
-	map(region.n, function(neighbour) {
-		neighbour.e.style.fill="#777";
-	});
+function updateRegionDisplay(gameState, region) {
+	var owner = gameState.o[region.i];
+	region.e.style.fill = owner ? owner.c : 'gray';
+	var temple = gameState.t[region.i];
+	if (temple)
+		region.e.style.strokeWidth = 3;
 }
 
-generateRegions(document.body);
+function updateDisplay(gameState) {
+	map(gameState.r, updateRegionDisplay.bind(gameState, gameState));
+}
+
+var regions = generateMap(document.body);
+var state = makeInitialState(regions);
+updateDisplay(state);
