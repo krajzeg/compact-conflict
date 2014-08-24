@@ -96,10 +96,13 @@ function generateMap(container) {
 	}
 
 	function perturbedPoint(x,y) {
-		x *= blockSize; y *= blockSize;
-		var angle = (sin(x*y+perturbConst*357)) * 180.0;
-		var dist = (sin(x*y+perturbConst*211)) * blockSize / 2;
-		return [x+sin(angle)*dist,y+Math.cos(angle)*dist];
+		x /= mapWidth; y /= mapHeight;
+		
+		var angle = (sin(x*y*600+perturbConst*357)) * 180.0;
+		var dist = (sin(x*y*600+perturbConst*211))/2;
+		x += sin(angle)*dist/mapWidth; y += Math.cos(angle)*dist/mapHeight;
+
+		return [x*200, y*200];
 	}
 
 	function fillNeighbourLists() {
@@ -117,7 +120,7 @@ function generateMap(container) {
 	}
 
 	function makeDOMElements() {
-		container.innerHTML = "<svg width='1000' height='1000'>" + 
+		container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + 
 			map(regions, function(region) {
 				return "<polygon points='" + 
 					region.p.join(" ") + 
@@ -148,15 +151,12 @@ function makeInitialState(regions) {
 function updateRegionDisplay(gameState, region) {
 	var owner = gameState.o[region.i];
 	region.e.style.fill = owner ? owner.c : 'gray';
-	var temple = gameState.t[region.i];
-	if (temple)
-		region.e.style.strokeWidth = 3;
 }
 
 function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay.bind(gameState, gameState));
 }
 
-var regions = generateMap(document.body);
+var regions = generateMap(document.querySelector('#m'));
 var state = makeInitialState(regions);
 updateDisplay(state);
