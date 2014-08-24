@@ -180,11 +180,9 @@ function gradientStop(percent, color) {
 function makeGradient(id, light, dark) {
 	return elem('radialGradient', {
 		i: id,
-		cx: '-100%',
-		cy: '50%',
+		cx: '-100%', cy: '50%',
+		fx: '-100%', fy: '50%',
 		r: '200%',
-		fx: '-100%',
-		fy: '50%',
 		gradientUnits: 'userSpaceOnUse'
 	}, gradientStop(60, dark) + gradientStop(100, light));
 }
@@ -235,10 +233,15 @@ function prepareDisplay(container, gameState) {
 	}
 
 	function makeTemples() {
-		/*map(gameState.t, function(temple) {
-			var templeHTML = div('o', div('i','',''));
+		map(gameState.t, function(temple) {
+			var center = temple.r.c;
+			var style = 'left:' + (center[0]/2-1.5) + '%;top:' + (center[1]/2-4) + '%;background:#fff';
+			var templeHTML = elem('div', {
+				c: 'o',
+				s: style
+			}, elem('div', {c: 'i'}));
 			container.insertAdjacentHTML('beforeend', templeHTML);
-		});*/
+		});
 	}
 }
 
@@ -266,7 +269,7 @@ function makeInitialState(regions) {
 		r: regions,
 		p: players,
 		o: {0: players[0], 4: players[1]},
-		t: {0: {}, 4: {}},
+		t: [{r:regions[0]},{r:regions[4]}],
 		s: []
 	}
 }
