@@ -183,7 +183,7 @@ function projectPoint(p) {
 	var x = p[0] / mapWidth, y = p[1] / mapHeight;
 	var alpha = x * .4 + .6;
 	y = y * alpha + 0.5 * (1-alpha);
-	return [x*200, y*200];
+	return [x*100, y*100];
 }
 
 function gradientStop(percent, color) {
@@ -207,7 +207,7 @@ function makePolygon(points, id, fill, noStroke) {
 	return elem('polygon', {
 		i: id,
 		points: map(points, projectPoint).join(' '),
-		s: 'fill:url(#' + fill + ');' + ((noStroke) ? '' : 'stroke:#000;stroke-width:0.5')
+		s: 'fill:url(#' + fill + ');' + ((noStroke) ? '' : 'stroke:#000;stroke-width:0.25')
 	})
 }
 
@@ -230,7 +230,7 @@ function prepareDisplay(container, gameState) {
 	var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, true);
 
 	container.innerHTML = elem('svg', {
-		viewbox: '0 0 200 200',
+		viewbox: '0 0 100 100',
 		preserveAspectRatio: 'none'
 	}, defs + ocean + shadows + bottoms + tops);
 
@@ -253,7 +253,7 @@ function prepareDisplay(container, gameState) {
 
 			var center = temple.r.c, 
 				id = 'tp' + index, iid = 'ti' + index,
-				style = 'left:' + (center[0]/2-1.5) + '%;top:' + (center[1]/2-4) + '%';
+				style = 'left:' + (center[0]-1.5) + '%;top:' + (center[1]-4) + '%';
 			
 			var templeHTML = elem('div', {
 				i: id,
@@ -276,6 +276,9 @@ function prepareDisplay(container, gameState) {
 function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay);
 	forEachProperty(gameState.t, updateTempleDisplay);
+	/*forEachProperty(gameState.s, function(soldiers, regionIndex) {
+		map(soldiers, updateSoldierDisplay.bind(0,region[regionIndex]));
+	});*/
 
 	function updateRegionDisplay(region) {
 		var owner = gameState.o[region.i];
@@ -284,6 +287,20 @@ function updateDisplay(gameState) {
 	function updateTempleDisplay(temple) {
 		temple.e.style.background = temple.t.c;
 		temple.i.innerHTML = temple.t.t;
+	}
+	function updateSoldierDisplay(region, soldier, index) {
+		var center = region.c;
+		var totalSoldiers = s[region.i].length;
+		var domElement = $('#s'+s.i);
+		if (!domElement) {
+			var html = elem('div', {
+				c: 's',
+				i: 's' + s.i,
+				s: 'background:' + solider.t.c
+			});
+			$('#m').insertAdjacentHTML(html);
+			domElement = $('#s' + s.i);
+		}
 	}
 }
 
@@ -303,6 +320,11 @@ function makeInitialState(regions) {
 			4: {r:regions[4], t: air}, 
 			7: {r:regions[7], t: none}
 		},
-		s: []
+		s: {
+			0: [
+				{i:0,t:fire},
+				{i:1,t:fire}
+			]
+		}
 	}
 }
