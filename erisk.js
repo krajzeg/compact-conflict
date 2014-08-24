@@ -12,7 +12,7 @@ var mapWidth = 30,
 // Helper functions used for brevity or convenience.
 // ==========================================================
 
-var sin = Math.sin, cos = Math.cos;
+var sin = Math.sin, cos = Math.cos, doc = document, $ = doc.querySelector.bind(doc);
 function rint(low,high) {
 	return Math.floor(low+Math.random()*(high-low));
 }
@@ -30,14 +30,27 @@ function for2d(x1,y1,x2,y2,fn) {
 		map(range(y1,y2), fn.bind(0,x));
 	});
 }
+function elem(tag,attrs,contents) {
+	var expanded = {
+		c: 'class',
+		s: 'style',
+		i: 'id'
+	}
+	var html = "<" + tag + " ";
+	for (var attributeName in attrs) {
+		html += (expanded[attributeName] || attributeName) + "='" + attrs[attributeName] + "'";
+	}
+	html += ">" + (contents || '') + "</" + tag + ">";
+
+	return html;
+}
 
 // ==========================================================
 // This part of the code initalizes a new game.
 // ==========================================================
 
-var regions = generateMap();
-var state = makeInitialState(regions);
-makeDOMElements(document.querySelector('#m'), state);
+var state = makeInitialState();
+prepareDisplay($('#m'), state);
 updateDisplay(state);
 
 // ==========================================================
@@ -158,56 +171,75 @@ function projectPoint(p) {
 }
 
 function gradientStop(percent, color) {
-	return "<stop offset='" + percent + "%'style='stop-color:" + color + "'/>";
+	return elem('stop', {
+		offset: percent + '%',
+		s: 'stop-color:' + color
+	});
 }
 
 function makeGradient(id, light, dark) {
-	return "<radialGradient id='" + id + "'cx='-100%'cy='50%'r='200%'fx='-100%'fy='50%'gradientUnits='userSpaceOnUse'>" +
-		gradientStop(60, dark) + gradientStop(100, light) +
-		"</radialGradient>";
+	return elem('radialGradient', {
+		i: id,
+		cx: '-100%',
+		cy: '50%',
+		r: '200%',
+		fx: '-100%',
+		fy: '50%',
+		gradientUnits: 'userSpaceOnUse'
+	}, gradientStop(60, dark) + gradientStop(100, light));
 }
 
 function makePolygon(points, id, fill, noStroke) {
-	var polygon = "<polygon id='" + id + "'points='" + 
-		map(points, projectPoint).join(" ") + 
-		"'style='fill:url(#" + fill + ");";
-	if (!noStroke) polygon += "stroke:#000;stroke-width:0.5"
-	polygon += "'></polygon>";
-	return polygon;
+	return elem('polygon', {
+		i: id,
+		points: map(points, projectPoint).join(' '),
+		s: 'fill:url(#' + fill + ');' + ((noStroke) ? '' : 'stroke:#000;stroke-width:0.5')
+	})
 }
 
 
-function makeDOMElements(container, gameState) {
+function prepareDisplay(container, gameState) {
 	var regions = gameState.r;
 
-	var defs = "<defs>" + 
+	var defs = elem('defs', {}, 		
 		makeGradient('b', '#88f', "#113") + 
 		makeGradient('l', '#fc9', '#530') + 	
 		makeGradient('d', '#210', '#000') +
 		makeGradient('w', '#55f', '#003') +
 		map(gameState.p, function(player, index) {
 			return makeGradient('p' + index, player.l, player.d);
-		}).join("") +	
-		"</defs>";
+		}).join(""));
 
 	var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
 	var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
-	var bottoms = makeRegionPolys('d', 'd', 1, 1, 0.05, 0.05);
-	var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, 0.2, 0.2, true);
+	var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
+	var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, true);
 
-	container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + defs + ocean + shadows + bottoms + tops + "</svg>"
+	container.innerHTML = elem('svg', {
+		viewbox: '0 0 200 200',
+		preserveAspectRatio: 'none'
+	}, defs + ocean + shadows + bottoms + tops);
 
 	map(regions, function(region, index) {
 		region.i = index;
-		region.e = document.querySelector('#r' + index);
+		region.e = $('#r' + index);
+		region.c = projectPoint(centerOfWeight(region.p));
 	});
 
+	makeTemples();
+
 	function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
-		return "<g>" + map(regions, function(region, index) {
+		return elem('g', {}, map(regions, function(region, index) {
 			return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, noStroke);
-		}) + "</g>";
+		}).join(""));
 	}
 
+	function makeTemples() {
+		/*map(gameState.t, function(temple) {
+			var templeHTML = div('o', div('i','',''));
+			container.insertAdjacentHTML('beforeend', templeHTML);
+		});*/
+	}
 }
 
 // ==========================================================
@@ -217,7 +249,6 @@ function makeDOMElements(container, gameState) {
 
 function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay);
-
 	function updateRegionDisplay(region) {
 		var owner = gameState.o[region.i];
 		region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';
@@ -229,6 +260,7 @@ function updateDisplay(gameState) {
 // ==========================================================
 
 function makeInitialState(regions) {
+	var regions = generateMap();
 	var players = [{i:0, l: '#ff0', d:'#a70'}, {i:1, l: '#f60', d:'#700'}];
 	return {
 		r: regions,
