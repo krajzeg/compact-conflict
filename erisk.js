@@ -1,3 +1,17 @@
+// ==========================================================
+// Game-wide constants
+// ==========================================================
+
+var mapWidth = 30, 
+	mapHeight = 20, 
+	maxRegionSize = 8,
+	neededRegions = 18;
+
+
+// ==========================================================
+// Helper functions used for brevity or convenience.
+// ==========================================================
+
 var sin = Math.sin, cos = Math.cos;
 function rint(low,high) {
 	return Math.floor(low+Math.random()*(high-low));
@@ -18,16 +32,20 @@ function for2d(x1,y1,x2,y2,fn) {
 }
 
 // ==========================================================
+// This part of the code initalizes a new game.
+// ==========================================================
+
+var regions = generateMap();
+var state = makeInitialState(regions);
+makeDOMElements(document.querySelector('#m'), state);
+updateDisplay(state);
+
+// ==========================================================
 // This part of the code deals with procedural map generation
 // prior to gameplay.
 // ==========================================================
 
-var blockSize = 25, 
-		mapWidth = 30, 
-		mapHeight = 20, 
-		maxRegionSize = 8,
-		neededRegions = 18;
-function generateMap(container) {
+function generateMap() {
 	var perturbConst = rint(0,100000);
 	var regionMap = range(0,mapWidth).map(function(){return []});
 	var regions = [], count = 0;
@@ -49,9 +67,7 @@ function generateMap(container) {
 		}
 	}
 
-	fillNeighbourLists();
-	makeDOMElements();
-
+	fillNeighbourLists();	
 	return regions;
 	
 	function shrink(bounds) {
@@ -99,13 +115,6 @@ function generateMap(container) {
 		return [x+sin(angle)*dist, y+cos(angle)*dist];
 	}
 
-	function projectPoint(p) {
-		var x = p[0] / mapWidth, y = p[1] / mapHeight;
-		var alpha = x * .4 + .6;
-		y = y * alpha + 0.5 * (1-alpha);
-		return [x*200, y*200];
-	}
-
 	function fillNeighbourLists() {
 		for2d(1, 1, mapWidth-1, mapHeight-1, function(x,y) {
 			var region = regionMap[x][y];
@@ -119,47 +128,85 @@ function generateMap(container) {
 			}
 		});
 	}
-
-	function makePolygon(points, id, fill) {
-		return "<polygon id='" + id + "'points='" + 
-			points.map(projectPoint).join(" ") + 
-			"'style='fill:" + fill + ";stroke:#000;'></polygon>";
-	}
-
-	function makeDOMElements() {
-		var polys = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', '#05f');
-		polys += map(regions, function(region, index) {
-			return makePolygon(region.p, "r" + index, "#777");
-		});
-		container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + polys + "</svg>"
-
-		map(regions, function(region, index) {
-			region.i = index;
-			region.e = document.querySelector('#r' + index);
-		});
-	}
 }
 
-function makeInitialState(regions) {
-	var players = [{c: '#ff0'}, {c: '#f00'}];
-	return {
-		r: regions,
-		p: players,
-		o: {0: players[0], 17: players[1]},
-		t: {0: {}, 17: {}},
-		s: []
-	}
+// ==========================================================
+// This part of the code creates the initial rendering of the
+// game map as an SVG object.
+// ==========================================================
+
+function projectPoint(p) {
+	var x = p[0] / mapWidth, y = p[1] / mapHeight;
+	var alpha = x * .4 + .6;
+	y = y * alpha + 0.5 * (1-alpha);
+	return [x*200, y*200];
 }
+
+function gradientStop(percent, color) {
+	return "<stop offset='" + percent + "%'style='stop-color:" + color + "'/>";
+}
+
+function makeGradient(id, light, dark) {
+	return "<radialGradient id='" + id + "'cx='50%'cy='50%'r='100%'fx='-10%'fy='50%'gradientUnits='userSpaceOnUse'>" +
+		gradientStop(30, dark) + gradientStop(100, light) +
+		"</radialGradient>";
+}
+
+function makePolygon(points, id, fill) {
+	return "<polygon id='" + id + "'points='" + 
+		map(points, projectPoint).join(" ") + 
+		"'style='fill:url(#" + fill + ");stroke:#000;stroke-width:0.5;'></polygon>";
+}
+
+function makeDOMElements(container, gameState) {
+	var regions = gameState.r;
+
+	var defs = "<defs>" + 
+		makeGradient('b', '#88f', "#004") + 
+		makeGradient('l', '#fc9', '#530') + 	
+		map(gameState.p, function(player, index) {
+			return makeGradient('p' + index, player.l, player.d);
+		}).join("") +	
+		"</defs>";
+
+	var polys = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
+	polys += map(regions, function(region, index) {
+		return makePolygon(region.p, 'r' + index, 'l');
+	});
+
+	container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + defs + polys + "</svg>"
+
+	map(regions, function(region, index) {
+		region.i = index;
+		region.e = document.querySelector('#r' + index);
+	});
+}
+
+// ==========================================================
+// This part of the code deals with updating the display to
+// match the current game state.
+// ==========================================================
 
 function updateRegionDisplay(gameState, region) {
 	var owner = gameState.o[region.i];
-	region.e.style.fill = owner ? owner.c : 'gray';
+	region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';
 }
 
 function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay.bind(gameState, gameState));
 }
 
-var regions = generateMap(document.querySelector('#m'));
-var state = makeInitialState(regions);
-updateDisplay(state);
+// ==========================================================
+// Game logic
+// ==========================================================
+
+function makeInitialState(regions) {
+	var players = [{i:0, l: '#ff0', d:'#a70'}, {i:1, l: '#f60', d:'#700'}];
+	return {
+		r: regions,
+		p: players,
+		o: {0: players[0], 4: players[1]},
+		t: {0: {}, 4: {}},
+		s: []
+	}
+}
