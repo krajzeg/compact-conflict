@@ -135,6 +135,21 @@ function generateMap() {
 // game map as an SVG object.
 // ==========================================================
 
+function centerOfWeight(points) {
+	var xc = 0.0, yc = 0.0, l = points.length;
+	map(points, function(p) {
+		xc += p[0]; yc += p[1];
+	});
+	return [xc/l, yc/l];
+}
+
+function transformPoints(points, xm, ym, xd, yd) {
+	var c = centerOfWeight(points);
+	return map(points, function(p) {
+		return [c[0] + (p[0]-c[0]) * xm + xd, c[1] + (p[1]-c[1]) * ym + yd];
+	});
+}
+
 function projectPoint(p) {
 	var x = p[0] / mapWidth, y = p[1] / mapHeight;
 	var alpha = x * .4 + .6;
@@ -147,39 +162,52 @@ function gradientStop(percent, color) {
 }
 
 function makeGradient(id, light, dark) {
-	return "<radialGradient id='" + id + "'cx='50%'cy='50%'r='100%'fx='-10%'fy='50%'gradientUnits='userSpaceOnUse'>" +
-		gradientStop(30, dark) + gradientStop(100, light) +
+	return "<radialGradient id='" + id + "'cx='-100%'cy='50%'r='200%'fx='-100%'fy='50%'gradientUnits='userSpaceOnUse'>" +
+		gradientStop(60, dark) + gradientStop(100, light) +
 		"</radialGradient>";
 }
 
-function makePolygon(points, id, fill) {
-	return "<polygon id='" + id + "'points='" + 
+function makePolygon(points, id, fill, noStroke) {
+	var polygon = "<polygon id='" + id + "'points='" + 
 		map(points, projectPoint).join(" ") + 
-		"'style='fill:url(#" + fill + ");stroke:#000;stroke-width:0.5;'></polygon>";
+		"'style='fill:url(#" + fill + ");";
+	if (!noStroke) polygon += "stroke:#000;stroke-width:0.5"
+	polygon += "'></polygon>";
+	return polygon;
 }
+
 
 function makeDOMElements(container, gameState) {
 	var regions = gameState.r;
 
 	var defs = "<defs>" + 
-		makeGradient('b', '#88f', "#004") + 
+		makeGradient('b', '#88f', "#113") + 
 		makeGradient('l', '#fc9', '#530') + 	
+		makeGradient('d', '#210', '#000') +
+		makeGradient('w', '#55f', '#003') +
 		map(gameState.p, function(player, index) {
 			return makeGradient('p' + index, player.l, player.d);
 		}).join("") +	
 		"</defs>";
 
-	var polys = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
-	polys += map(regions, function(region, index) {
-		return makePolygon(region.p, 'r' + index, 'l');
-	});
+	var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
+	var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
+	var bottoms = makeRegionPolys('d', 'd', 1, 1, 0.05, 0.05);
+	var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, 0.2, 0.2, true);
 
-	container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + defs + polys + "</svg>"
+	container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + defs + ocean + shadows + bottoms + tops + "</svg>"
 
 	map(regions, function(region, index) {
 		region.i = index;
 		region.e = document.querySelector('#r' + index);
 	});
+
+	function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
+		return "<g>" + map(regions, function(region, index) {
+			return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, noStroke);
+		}) + "</g>";
+	}
+
 }
 
 // ==========================================================
