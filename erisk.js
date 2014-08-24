@@ -37,6 +37,10 @@ function range(low,high) {
 function map(seq,fn) {
 	return [].slice.call(seq).map(fn);
 }
+function forEachProperty(obj,fn) {
+	for (var property in obj)
+		fn(obj[property], property);
+}
 function for2d(x1,y1,x2,y2,fn) {
 	map(range(x1,x2), function(x) {
 		map(range(y1,y2), fn.bind(0,x));
@@ -245,10 +249,11 @@ function prepareDisplay(container, gameState) {
 	}
 
 	function makeTemples() {
-		map(gameState.t, function(temple) {
+		forEachProperty(gameState.t, function(temple, index) {
+
 			var center = temple.r.c, 
-				id = 'tp' + temple.r.i, iid = 'ti' + temple.r.i,
-				style = 'left:' + (center[0]/2-1.5) + '%;top:' + (center[1]/2-4) + '%;background:#fff';
+				id = 'tp' + index, iid = 'ti' + index,
+				style = 'left:' + (center[0]/2-1.5) + '%;top:' + (center[1]/2-4) + '%';
 			
 			var templeHTML = elem('div', {
 				i: id,
@@ -270,7 +275,7 @@ function prepareDisplay(container, gameState) {
 
 function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay);
-	map(gameState.t, updateTempleDisplay);
+	forEachProperty(gameState.t, updateTempleDisplay);
 
 	function updateRegionDisplay(region) {
 		var owner = gameState.o[region.i];
@@ -293,7 +298,11 @@ function makeInitialState(regions) {
 		r: regions,
 		p: players,
 		o: {0: players[0], 4: players[1]},
-		t: [{r:regions[0], t: water},{r:regions[4], t: air}],
+		t: {
+			0: {r:regions[0], t: water}, 
+			4: {r:regions[4], t: air}, 
+			7: {r:regions[7], t: none}
+		},
 		s: []
 	}
 }
