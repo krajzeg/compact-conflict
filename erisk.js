@@ -276,9 +276,9 @@ function prepareDisplay(container, gameState) {
 function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay);
 	forEachProperty(gameState.t, updateTempleDisplay);
-	/*forEachProperty(gameState.s, function(soldiers, regionIndex) {
-		map(soldiers, updateSoldierDisplay.bind(0,region[regionIndex]));
-	});*/
+	forEachProperty(gameState.s, function(soldiers, regionIndex) {
+		map(soldiers, updateSoldierDisplay.bind(0,gameState.r[regionIndex]));
+	});
 
 	function updateRegionDisplay(region) {
 		var owner = gameState.o[region.i];
@@ -290,17 +290,20 @@ function updateDisplay(gameState) {
 	}
 	function updateSoldierDisplay(region, soldier, index) {
 		var center = region.c;
-		var totalSoldiers = s[region.i].length;
-		var domElement = $('#s'+s.i);
+		var totalSoldiers = gameState.s[region.i].length;
+		var domElement = $('#s'+soldier.i);
 		if (!domElement) {
 			var html = elem('div', {
 				c: 's',
-				i: 's' + s.i,
-				s: 'background:' + solider.t.c
+				i: 's' + soldier.i,
+				s: 'background:' + soldier.t.c
 			});
-			$('#m').insertAdjacentHTML(html);
-			domElement = $('#s' + s.i);
+			$('#m').insertAdjacentHTML('beforeEnd', html);
+			domElement = $('#s' + soldier.i);
 		}
+		var offset = (-0.6 * totalSoldiers + index * 1.2);
+		domElement.style.left = (center[0]+offset-0.3) + '%';
+		domElement.style.top  = (center[1]+1.5+offset*0.2) + '%';
 	}
 }
 
@@ -322,8 +325,14 @@ function makeInitialState(regions) {
 		},
 		s: {
 			0: [
-				{i:0,t:fire},
-				{i:1,t:fire}
+				{i:0,t:water},
+				{i:1,t:water},
+				{i:2,t:water},
+				{i:3,t:water},
+			],
+			4: [
+				{i:4,t:air},
+				{i:5,t:air}
 			]
 		}
 	}
