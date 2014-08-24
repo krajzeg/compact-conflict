@@ -1,4 +1,4 @@
-var sin = Math.sin;
+var sin = Math.sin, cos = Math.cos;
 function rint(low,high) {
 	return Math.floor(low+Math.random()*(high-low));
 }
@@ -26,7 +26,7 @@ var blockSize = 25,
 		mapWidth = 30, 
 		mapHeight = 20, 
 		maxRegionSize = 8,
-		neededRegions = 20;
+		neededRegions = 18;
 function generateMap(container) {
 	var perturbConst = rint(0,100000);
 	var regionMap = range(0,mapWidth).map(function(){return []});
@@ -34,15 +34,13 @@ function generateMap(container) {
 
 	while(count < neededRegions) {
 		var bounds = {
-			l: rint(1, mapWidth-maxRegionSize-1),
-			t: rint(1, mapHeight-maxRegionSize-1),
-			w: rint(1, maxRegionSize), h: rint(1, maxRegionSize)
+			l: rint(1, mapWidth-maxRegionSize+1),
+			t: rint(1, mapHeight-maxRegionSize+1),
+			w: rint(3, maxRegionSize), h: rint(3, maxRegionSize)
 		}; 
 		if (count && !overlaps(bounds)) continue;
 		
-		while(1) {
-			if (shrink(bounds))
-				break;
+		while(!shrink(bounds)) {
 			if (!overlaps(bounds)) {
 				regions.push(makeRegionAt(bounds));
 				count++;
@@ -59,9 +57,9 @@ function generateMap(container) {
 	function shrink(bounds) {
 		var r = rint(0,4);
 		if (r % 2) bounds.w--; else bounds.h--;
-		if (r == 2) bounds.l++;
-		if (r == 3) bounds.t++;
-		return (bounds.w * bounds.h < 5);
+		if (r == 2) bounds.t++;
+		if (r == 3) bounds.l++;
+		return (bounds.w * bounds.h < 9);
 	}
 
 	function overlaps(bounds) {
@@ -96,12 +94,15 @@ function generateMap(container) {
 	}
 
 	function perturbedPoint(x,y) {
-		x /= mapWidth; y /= mapHeight;
-		
-		var angle = (sin(x*y*600+perturbConst*357)) * 180.0;
-		var dist = (sin(x*y*600+perturbConst*211))/2;
-		x += sin(angle)*dist/mapWidth; y += Math.cos(angle)*dist/mapHeight;
+		var angle = (sin(x*y*600+perturbConst*357)) * 6.28;
+		var dist = (sin(x*y*600+perturbConst*211)) / 2;
+		return [x+sin(angle)*dist, y+cos(angle)*dist];
+	}
 
+	function projectPoint(p) {
+		var x = p[0] / mapWidth, y = p[1] / mapHeight;
+		var alpha = x * .4 + .6;
+		y = y * alpha + 0.5 * (1-alpha);
 		return [x*200, y*200];
 	}
 
@@ -119,31 +120,33 @@ function generateMap(container) {
 		});
 	}
 
-	function makeDOMElements() {
-		container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + 
-			map(regions, function(region) {
-				return "<polygon points='" + 
-					region.p.join(" ") + 
-					"'style='fill:#777;stroke:#000;'></polygon>";
-			}).join("") + 
-			"</svg>";
+	function makePolygon(points, id, fill) {
+		return "<polygon id='" + id + "'points='" + 
+			points.map(projectPoint).join(" ") + 
+			"'style='fill:" + fill + ";stroke:#000;'></polygon>";
+	}
 
-		var svg = document.querySelector('svg');
-		map(svg.childNodes, function(polygon, index) {
-			var region = regions[index];
+	function makeDOMElements() {
+		var polys = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', '#05f');
+		polys += map(regions, function(region, index) {
+			return makePolygon(region.p, "r" + index, "#777");
+		});
+		container.innerHTML = "<svg viewbox='0 0 200 200' preserveAspectRatio='none'>" + polys + "</svg>"
+
+		map(regions, function(region, index) {
 			region.i = index;
-			region.e = polygon;
+			region.e = document.querySelector('#r' + index);
 		});
 	}
 }
 
 function makeInitialState(regions) {
-	var players = [{c: '#ff0'}, {c: '#00f'}];
+	var players = [{c: '#ff0'}, {c: '#f00'}];
 	return {
 		r: regions,
 		p: players,
-		o: {0: players[0], 19: players[1]},
-		t: {0: {}, 19: {}},
+		o: {0: players[0], 17: players[1]},
+		t: {0: {}, 17: {}},
 		s: []
 	}
 }
