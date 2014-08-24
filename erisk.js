@@ -7,6 +7,18 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 18;
 
+// ==========================================================
+// The four elements and their properties
+// ==========================================================
+
+var earth = {c: '#520', t:'&#22303;'};
+var air   = {c: '#333', t:'&#39080;', s: earth};
+var fire  = {c: '#f00', t:'&#28779;', s: air};
+var water = {c: '#06c', t:'&#27700;', s: fire};
+var none = {c: '#fff', t:''};
+
+earth.s = water;
+var elements = [earth, air, fire, water];
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -234,13 +246,19 @@ function prepareDisplay(container, gameState) {
 
 	function makeTemples() {
 		map(gameState.t, function(temple) {
-			var center = temple.r.c;
-			var style = 'left:' + (center[0]/2-1.5) + '%;top:' + (center[1]/2-4) + '%;background:#fff';
+			var center = temple.r.c, 
+				id = 'tp' + temple.r.i, iid = 'ti' + temple.r.i,
+				style = 'left:' + (center[0]/2-1.5) + '%;top:' + (center[1]/2-4) + '%;background:#fff';
+			
 			var templeHTML = elem('div', {
+				i: id,
 				c: 'o',
 				s: style
-			}, elem('div', {c: 'i'}));
+			}, elem('div', {i: iid, c: 'i'}));
+
 			container.insertAdjacentHTML('beforeend', templeHTML);
+			temple.e = $('#'+id);
+			temple.i = $('#'+iid);			
 		});
 	}
 }
@@ -252,9 +270,15 @@ function prepareDisplay(container, gameState) {
 
 function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay);
+	map(gameState.t, updateTempleDisplay);
+
 	function updateRegionDisplay(region) {
 		var owner = gameState.o[region.i];
-		region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';
+		region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';		
+	}
+	function updateTempleDisplay(temple) {
+		temple.e.style.background = temple.t.c;
+		temple.i.innerHTML = temple.t.t;
 	}
 }
 
@@ -269,7 +293,7 @@ function makeInitialState(regions) {
 		r: regions,
 		p: players,
 		o: {0: players[0], 4: players[1]},
-		t: [{r:regions[0]},{r:regions[4]}],
+		t: [{r:regions[0], t: water},{r:regions[4], t: air}],
 		s: []
 	}
 }
