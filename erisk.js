@@ -187,13 +187,13 @@ function makeDOMElements(container, gameState) {
 // match the current game state.
 // ==========================================================
 
-function updateRegionDisplay(gameState, region) {
-	var owner = gameState.o[region.i];
-	region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';
-}
-
 function updateDisplay(gameState) {
-	map(gameState.r, updateRegionDisplay.bind(gameState, gameState));
+	map(gameState.r, updateRegionDisplay);
+
+	function updateRegionDisplay(region) {
+		var owner = gameState.o[region.i];
+		region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';
+	}
 }
 
 // ==========================================================
