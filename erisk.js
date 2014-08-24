@@ -5,17 +5,17 @@
 var mapWidth = 30, 
 	mapHeight = 20, 
 	maxRegionSize = 8,
-	neededRegions = 18;
+	neededRegions = 20;
 
 // ==========================================================
 // The four elements and their properties
 // ==========================================================
 
-var earth = {c: '#520', t:'&#22303;'};
-var air   = {c: '#333', t:'&#39080;', s: earth};
+var earth = {c: '#554', t:'&#22303;'};
+var air   = {c: '#ccf', t:'&#39080;', s: earth};
 var fire  = {c: '#f00', t:'&#28779;', s: air};
 var water = {c: '#06c', t:'&#27700;', s: fire};
-var none = {c: '#fff', t:''};
+var none = {c: '#777', t:''};
 
 earth.s = water;
 var elements = [earth, air, fire, water];
@@ -89,8 +89,7 @@ function generateMap() {
 		
 		while(!shrink(bounds)) {
 			if (!overlaps(bounds)) {
-				regions.push(makeRegionAt(bounds));
-				count++;
+				regions.push(makeRegionAt(count++, bounds));
 				break;
 			}
 		}
@@ -115,7 +114,7 @@ function generateMap() {
 		return rv;
 	}
 
-	function makeRegionAt(bounds) {
+	function makeRegionAt(index, bounds) {
 		// make points for the region
 		var l=bounds.l,t=bounds.t,w=bounds.w,h=bounds.h;
 		var points = [];
@@ -127,7 +126,7 @@ function generateMap() {
 			points[w+i] = perturbedPoint(l+w,t+i);
 			points[w+h+w+i] = perturbedPoint(l,t+h-i);
 		});
-		var region = {p: points};
+		var region = {i: index, p: points};
 		
 		// mark it in the map
 		for2d(bounds.l, bounds.t, bounds.l + bounds.w, bounds.t + bounds.h, function(x,y){
@@ -235,7 +234,6 @@ function prepareDisplay(container, gameState) {
 	}, defs + ocean + shadows + bottoms + tops);
 
 	map(regions, function(region, index) {
-		region.i = index;
 		region.e = $('#r' + index);
 		region.c = projectPoint(centerOfWeight(region.p));
 	});
@@ -311,10 +309,77 @@ function updateDisplay(gameState) {
 // Game logic
 // ==========================================================
 
+var soldierCounter;
+function addSoldier(gameState, region, element) {
+	soldierCounter = (soldierCounter + 1) || 0;
+	if (!gameState.s[region.i])
+		gameState.s[region.i] = [];
+	gameState.s[region.i].push({
+		i: soldierCounter++,
+		t: element
+	});
+}
+
 function makeInitialState(regions) {
-	var regions = generateMap();
-	var players = [{i:0, l: '#ff0', d:'#a70'}, {i:1, l: '#f60', d:'#700'}];
-	return {
+	var regions = generateMap();	
+	var players = [
+		{i:0, l: '#ff0', d:'#a70'}, 
+		{i:1, l: '#f33', d:'#700'},
+		{i:2, l: '#090', d:'#030'}
+	];
+	var gameState = {
+		r: regions,
+		p: players,
+		o: {}, t: {}, s: {}
+	}
+
+	setupPlayerBases();
+
+	return gameState;
+
+	function distanceSquared(region1, region2) {
+		var c1 = centerOfWeight(region1.p), c2 = centerOfWeight(region2.p),
+			dx = c1[0]-c2[0];
+			dy = c1[1]-c2[1];
+		return dx*dx+dy*dy;
+	}
+
+	function randomRegion() {
+		return regions[rint(0, regions.length)];
+	}
+
+	function setupPlayerBases() {
+		// pick three regions that are as far away as possible from each other
+		var bestDistance = 0.0, bestRegions;
+		for (var i = 0; i < 1000; i++) {
+			var r1 = randomRegion(), r2 = randomRegion(), r3 = randomRegion();			
+			var distance = distanceSquared(r1, r2) * distanceSquared(r1, r3) * distanceSquared(r2, r3);
+			if (distance > bestDistance) {
+				bestDistance = distance;
+				bestRegions = [r1, r2, r3];
+			}
+		}
+
+		// we have the regions, set up each player
+		map(players, function(player, index) {
+			var region = bestRegions[index];
+			// make one of the regions your own
+			gameState.o[region.i] = player;
+			// put a temple and 4 soldiers in it
+			var element = elements[rint(0,4)];
+			putTemple(region, element);
+			map(range(0,4), function() {
+				addSoldier(gameState, region, element);
+			});
+		});
+	}
+
+	function putTemple(region, element) {
+		var index = region.i;
+		gameState.t[index] = {r: region, i: index, t: element};
+	}
+
+/*	return {
 		r: regions,
 		p: players,
 		o: {0: players[0], 4: players[1]},
@@ -335,5 +400,5 @@ function makeInitialState(regions) {
 				{i:5,t:air}
 			]
 		}
-	}
+	}*/
 }
