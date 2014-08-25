@@ -467,7 +467,7 @@ function copyState(state) {
 	};
 }
 
-function playOneTurn(state) {
+function playOneMove(state) {
 	var controllingPlayer = state.p[state.m.p]; // whose the active player to make some kind of move?
 	var typeOfMove = state.m.t; // what type of move is needed?
 
@@ -478,7 +478,7 @@ function playOneTurn(state) {
 		// update display according to that new state
 		updateDisplay(newState);
 		// schedule next move
-		setTimeout(playOneTurn.bind(0, newState), 1);
+		setTimeout(playOneMove.bind(0, newState), 1);
 	});
 }
 
@@ -496,11 +496,23 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 
 	// next move
 	var moveState = state.m;
-	if (!--moveState.l) {
-		// next player!
-		moveState.p = (moveState.p + 1) % playerCount;
-		moveState.l = 3;
-	}
+	if (!--moveState.l)
+		nextTurn(state);
+}
+
+function nextTurn(state) {
+	var player = state.p[state.m.p];
+	
+	// temples produce one soldier per turn automatically
+	forEachProperty(state.t, function(temple, regionIndex) {
+		if (state.o[regionIndex] == player) {
+			// this is our temple, add a soldier of the temple's element
+			addSoldier(state, temple.r, temple.t);
+		}
+	});
+
+	// next turn, next player!
+	state.m = {p: (player.i + 1) % playerCount, m: MOVE_ARMY, l: 3};	
 }
 
 function soldierCount(state, region) {
@@ -529,4 +541,4 @@ function addSoldier(state, region, element) {
 var state = makeInitialState();
 prepareDisplay($('#m'), state);
 updateDisplay(state);
-playOneTurn(state);
+playOneMove(state);
