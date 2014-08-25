@@ -5,7 +5,8 @@
 var mapWidth = 30, 
 	mapHeight = 20, 
 	maxRegionSize = 8,
-	neededRegions = 20;
+	neededRegions = 20,
+	playerCount = 3;
 
 // ==========================================================
 // Game-relevant constants
@@ -369,10 +370,10 @@ function makeInitialState(regions) {
 	];
 	var regions = generateMap();
 	var gameState = {
-		r: regions,
 		p: players,
+		r: regions,
 		o: {}, t: {}, s: {},
-		a: players[0]
+		m: {p: 0, m: MOVE_ARMY, l: 3}
 	}
 
 	setupPlayerBases();
@@ -458,7 +459,7 @@ function copyState(state) {
 		r: state.r, 
 		p: state.p,
 		// some others... less so
-		a: deepCopy(state.a, 0), // this will be 1, once the "move state" gets more complex
+		m: deepCopy(state.m, 1), // this will be 1, once the "move state" gets more complex
 		o: deepCopy(state.o, 1),
 		t: deepCopy(state.t, 2),
 		s: deepCopy(state.s, 3)
@@ -467,8 +468,8 @@ function copyState(state) {
 }
 
 function playOneTurn(state) {
-	var controllingPlayer = state.a; // whose the active player to make some kind of move?
-	var typeOfMove = requiredTypeOfMove(state); // what type of move is needed?
+	var controllingPlayer = state.p[state.m.p]; // whose the active player to make some kind of move?
+	var typeOfMove = state.m.t; // what type of move is needed?
 
 	// let the player pick their move using UI or AI
 	pickMove(controllingPlayer, state, typeOfMove, function(move) {
@@ -492,6 +493,14 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 
 	// take ownership of the destination region
 	state.o[toRegion.i] = state.o[fromRegion.i];
+
+	// next move
+	var moveState = state.m;
+	if (!--moveState.l) {
+		// next player!
+		moveState.p = (moveState.p + 1) % playerCount;
+		moveState.l = 3;
+	}
 }
 
 function soldierCount(state, region) {
