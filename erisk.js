@@ -482,12 +482,16 @@ function playOneTurn(state) {
 }
 
 function moveSoldiers(state, fromRegion, toRegion, howMany) {
+	// move the soldiers
 	var fromList = state.s[fromRegion.i];
 	var toList = state.s[toRegion.i] || (state.s[toRegion.i] = []);
 	console.log(fromList, toList);
 	map(range(0, howMany), function() {
 		toList.push(fromList.shift());
 	});
+
+	// take ownership of the destination region
+	state.o[toRegion.i] = state.o[fromRegion.i];
 }
 
 function soldierCount(state, region) {
