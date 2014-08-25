@@ -321,11 +321,12 @@ function addSoldier(gameState, region, element) {
 }
 
 function makeInitialState(regions) {
-	var regions = generateMap();	
+	var regions = generateMap();
+	// 	'#fc9', '#530')
 	var players = [
-		{i:0, l: '#ff0', d:'#a70'}, 
-		{i:1, l: '#f33', d:'#700'},
-		{i:2, l: '#090', d:'#030'}
+		{i:0, l: '#ffa', d:'#960'}, 
+		{i:1, l: '#f88', d:'#722'},
+		{i:2, l: '#d9d', d:'#537'}
 	];
 	var gameState = {
 		r: regions,
