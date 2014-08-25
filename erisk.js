@@ -8,9 +8,10 @@ var mapWidth = 30,
 	neededRegions = 20;
 
 // ==========================================================
-// The four elements and their properties
+// Game-relevant constants
 // ==========================================================
 
+// === The four elements
 var earth = {c: '#554', t:'&#22303;'};
 var air   = {c: '#ccf', t:'&#39080;', s: earth};
 var fire  = {c: '#f00', t:'&#28779;', s: air};
@@ -19,6 +20,9 @@ var none = {c: '#777', t:''};
 
 earth.s = water;
 var elements = [earth, air, fire, water];
+
+// === The possible move types
+var PLACE_SOLDIER = 1;
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -60,14 +64,15 @@ function elem(tag,attrs,contents) {
 
 	return html;
 }
+function deepCopy(obj, depth) {
+	if ((!depth) || (typeof obj != 'object')) return obj;
 
-// ==========================================================
-// This part of the code initalizes a new game.
-// ==========================================================
-
-var state = makeInitialState();
-prepareDisplay($('#m'), state);
-updateDisplay(state);
+	var copy = (obj.length !== undefined) ? [] : {};
+	forEachProperty(obj, function(value, key) {
+		copy[key] = deepCopy(value, depth-1);
+	});
+	return copy;
+}
 
 // ==========================================================
 // This part of the code deals with procedural map generation
@@ -236,6 +241,10 @@ function prepareDisplay(container, gameState) {
 	map(regions, function(region, index) {
 		region.e = $('#r' + index);
 		region.c = projectPoint(centerOfWeight(region.p));
+
+		region.e.onclick = invokeUICallback.bind(0, region, 'c');
+		region.e.onmouseover = invokeUICallback.bind(0, region, 'i');
+		region.e.onmouseout = invokeUICallback.bind(0, region, 'o');
 	});
 
 	makeTemples();
@@ -267,6 +276,18 @@ function prepareDisplay(container, gameState) {
 }
 
 // ==========================================================
+// This part of the code deals with responding to user actions
+// ==========================================================
+
+var uiCallbacks = {};
+
+function invokeUICallback(region, type) {
+	var cb = uiCallbacks[type];
+	if (cb)
+		cb(region);
+}
+
+// ==========================================================
 // This part of the code deals with updating the display to
 // match the current game state.
 // ==========================================================
@@ -275,7 +296,7 @@ function updateDisplay(gameState) {
 	map(gameState.r, updateRegionDisplay);
 	forEachProperty(gameState.t, updateTempleDisplay);
 	forEachProperty(gameState.s, function(soldiers, regionIndex) {
-		map(soldiers, updateSoldierDisplay.bind(0,gameState.r[regionIndex]));
+		map(soldiers, updateSoldierDisplay.bind(0, gameState.r[regionIndex]));
 	});
 
 	function updateRegionDisplay(region) {
@@ -306,32 +327,21 @@ function updateDisplay(gameState) {
 }
 
 // ==========================================================
-// Game logic
+// Preparing the initial game state happens here
 // ==========================================================
 
-var soldierCounter;
-function addSoldier(gameState, region, element) {
-	soldierCounter = (soldierCounter + 1) || 0;
-	if (!gameState.s[region.i])
-		gameState.s[region.i] = [];
-	gameState.s[region.i].push({
-		i: soldierCounter++,
-		t: element
-	});
-}
-
 function makeInitialState(regions) {
-	var regions = generateMap();
-	// 	'#fc9', '#530')
 	var players = [
 		{i:0, l: '#ffa', d:'#960'}, 
 		{i:1, l: '#f88', d:'#722'},
 		{i:2, l: '#d9d', d:'#537'}
 	];
+	var regions = generateMap();
 	var gameState = {
 		r: regions,
 		p: players,
-		o: {}, t: {}, s: {}
+		o: {}, t: {}, s: {},
+		a: players[0]
 	}
 
 	setupPlayerBases();
@@ -379,27 +389,92 @@ function makeInitialState(regions) {
 		var index = region.i;
 		gameState.t[index] = {r: region, i: index, t: element};
 	}
-
-/*	return {
-		r: regions,
-		p: players,
-		o: {0: players[0], 4: players[1]},
-		t: {
-			0: {r:regions[0], t: water}, 
-			4: {r:regions[4], t: air}, 
-			7: {r:regions[7], t: none}
-		},
-		s: {
-			0: [
-				{i:0,t:water},
-				{i:1,t:water},
-				{i:2,t:water},
-				{i:3,t:water},
-			],
-			4: [
-				{i:4,t:air},
-				{i:5,t:air}
-			]
-		}
-	}*/
 }
+
+// ==========================================================
+// All the game logic and the machinery that runs its main
+// loop reside below.
+// ==========================================================
+
+var soldierCounter;
+
+function requiredTypeOfMove(state) {
+	return PLACE_SOLDIER; // for testing
+}
+
+function pickMove(player, state, typeOfMove, reportMoveCallback) {
+	// for testing
+	uiCallbacks.c = function(region) {
+		reportMoveCallback({t: PLACE_SOLDIER, r: region});
+		uiCallbacks.c = 0;
+	}
+}
+
+function makeMove(state, move) {
+	var newState = copyState(state);
+	
+	var moveType = move.t;
+	if (moveType == PLACE_SOLDIER) {
+		var region = move.r;
+		addSoldier(newState, region, water);
+	}
+
+	return newState;
+}
+
+/**
+ * Creates an independent copy of the game state, prior to modifying it.
+ **/
+function copyState(state) {	
+	return {
+		// some things are constant and can be shallowly copied
+		r: state.r, 
+		p: state.p,
+		// some others... less so
+		o: deepCopy(state.o, 1),
+		t: deepCopy(state.t, 2),
+		s: deepCopy(state.s, 3)
+	};
+}
+
+function playOneTurn(state) {
+	var controllingPlayer = state.a; // whose the active player to make some kind of move?
+	var typeOfMove = requiredTypeOfMove(state); // what type of move is needed?
+
+	// let the player pick their move using UI or AI
+	pickMove(controllingPlayer, state, typeOfMove, function(move) {
+		// the move is chosen - update state to a new immutable copy
+		var newState = makeMove(state, move);
+		// update display according to that new state
+		updateDisplay(newState);
+		// schedule next move
+		setTimeout(playOneTurn.bind(0, newState), 1);
+	});
+}
+
+function addSoldier(state, region, element) {
+	soldierCounter = (soldierCounter + 1) || 0;
+
+	console.log(state);
+
+	var soldierList = state.s[region.i];
+	if (!soldierList)
+		soldierList = state.s[region.i] = [];
+
+	soldierList.push({
+		i: soldierCounter++,
+		t: element
+	});
+
+	console.log(soldierList);
+}
+
+
+// ==========================================================
+// This part of the code initalizes a new game.
+// ==========================================================
+
+var state = makeInitialState();
+prepareDisplay($('#m'), state);
+updateDisplay(state);
+playOneTurn(state);
