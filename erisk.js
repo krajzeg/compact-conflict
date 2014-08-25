@@ -22,7 +22,7 @@ earth.s = water;
 var elements = [earth, air, fire, water];
 
 // === The possible move types
-var PLACE_SOLDIER = 1;
+var MOVE_ARMY = 1;
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -243,6 +243,7 @@ function prepareDisplay(container, gameState) {
 		region.c = projectPoint(centerOfWeight(region.p));
 
 		region.e.onclick = invokeUICallback.bind(0, region, 'c');
+		region.e.ondblclick = invokeUICallback.bind(0, region, 'd');
 		region.e.onmouseover = invokeUICallback.bind(0, region, 'i');
 		region.e.onmouseout = invokeUICallback.bind(0, region, 'o');
 	});
@@ -285,6 +286,35 @@ function invokeUICallback(region, type) {
 	var cb = uiCallbacks[type];
 	if (cb)
 		cb(region);
+	return false;
+}
+
+function uiPickMoveArmy(player, state, reportMoveCallback) {
+	uiCallbacks.c = function(region) {
+		if (!state.d) {
+			// no move in progress - start a new move if this is legal
+			if (state.o[region.i] != player) return;  // not our region, can't move
+			if (!soldierCount(state, region)) return; // no soldiers, can't move
+			state.d = {t: MOVE_ARMY, s: region, c: 1};
+			console.log("Starting move: " + region.i);
+		} else {
+			// we already have a move in progress
+			var decisionState = state.d;
+			// what region did we click?
+			if (region == decisionState.s) {
+				// the one we're moving army from - take more soldiers with us
+				if (decisionState.c < soldierCount(state, region))
+					decisionState.c++;
+				console.log("More soldiers.");
+			} else if (decisionState.s.n.indexOf(region) > -1) {
+				// one of the neighbours - let's finalize the move
+				console.log("Moving to: ", region.i);
+				uiCallbacks.c = 0;
+				decisionState.d = region;
+				reportMoveCallback(decisionState);
+			}
+		}
+	}
 }
 
 // ==========================================================
@@ -293,6 +323,7 @@ function invokeUICallback(region, type) {
 // ==========================================================
 
 function updateDisplay(gameState) {
+	console.log("Display update!");
 	map(gameState.r, updateRegionDisplay);
 	forEachProperty(gameState.t, updateTempleDisplay);
 	forEachProperty(gameState.s, function(soldiers, regionIndex) {
@@ -399,27 +430,23 @@ function makeInitialState(regions) {
 var soldierCounter;
 
 function requiredTypeOfMove(state) {
-	return PLACE_SOLDIER; // for testing
+	return MOVE_ARMY; // for testing
 }
 
 function pickMove(player, state, typeOfMove, reportMoveCallback) {
 	// for testing
-	uiCallbacks.c = function(region) {
-		reportMoveCallback({t: PLACE_SOLDIER, r: region});
-		uiCallbacks.c = 0;
-	}
+	uiPickMoveArmy(player, state, reportMoveCallback);
 }
 
 function makeMove(state, move) {
-	var newState = copyState(state);
+	var state = copyState(state);
 	
 	var moveType = move.t;
-	if (moveType == PLACE_SOLDIER) {
-		var region = move.r;
-		addSoldier(newState, region, water);
+	if (moveType == MOVE_ARMY) {
+		moveSoldiers(state, move.s, move.d, move.c);
 	}
 
-	return newState;
+	return state;
 }
 
 /**
@@ -431,9 +458,11 @@ function copyState(state) {
 		r: state.r, 
 		p: state.p,
 		// some others... less so
+		a: deepCopy(state.a, 0), // this will be 1, once the "move state" gets more complex
 		o: deepCopy(state.o, 1),
 		t: deepCopy(state.t, 2),
 		s: deepCopy(state.s, 3)
+		// and some others are completely omitted - namely 'd', the current "move decision" partial state
 	};
 }
 
@@ -452,10 +481,22 @@ function playOneTurn(state) {
 	});
 }
 
+function moveSoldiers(state, fromRegion, toRegion, howMany) {
+	var fromList = state.s[fromRegion.i];
+	var toList = state.s[toRegion.i] || (state.s[toRegion.i] = []);
+	console.log(fromList, toList);
+	map(range(0, howMany), function() {
+		toList.push(fromList.shift());
+	});
+}
+
+function soldierCount(state, region) {
+	var list = state.s[region.i];
+	return list ? list.length : 0;
+}
+
 function addSoldier(state, region, element) {
 	soldierCounter = (soldierCounter + 1) || 0;
-
-	console.log(state);
 
 	var soldierList = state.s[region.i];
 	if (!soldierList)
@@ -465,8 +506,6 @@ function addSoldier(state, region, element) {
 		i: soldierCounter++,
 		t: element
 	});
-
-	console.log(soldierList);
 }
 
 
