@@ -323,12 +323,21 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 // match the current game state.
 // ==========================================================
 
+var soldierDivsById = {};
 function updateDisplay(gameState) {
-	console.log("Display update!");
 	map(gameState.r, updateRegionDisplay);
 	forEachProperty(gameState.t, updateTempleDisplay);
+
+	var soldiersStillAlive = [];
 	forEachProperty(gameState.s, function(soldiers, regionIndex) {
 		map(soldiers, updateSoldierDisplay.bind(0, gameState.r[regionIndex]));
+	});
+	forEachProperty(soldierDivsById, function(div, id) {
+		if (soldiersStillAlive.indexOf(parseInt(id)) < 0) {
+			// this is an ex-div - in other words, the soldier it represented is dead
+			$('#m').removeChild(div);
+			delete soldierDivsById[id]; // apparently, this should be safe to do during iteration - http://stackoverflow.com/a/19564686
+		}
 	});
 
 	function updateRegionDisplay(region) {
@@ -340,18 +349,24 @@ function updateDisplay(gameState) {
 		temple.i.innerHTML = temple.t.t;
 	}
 	function updateSoldierDisplay(region, soldier, index) {
-		var center = region.c;
-		var totalSoldiers = gameState.s[region.i].length;
-		var domElement = $('#s'+soldier.i);
+		// we're still alive, so no removing our <div>
+		soldiersStillAlive.push(soldier.i);
+		
+		// find or create a <div> for showing the soldier
+		var domElement = soldierDivsById[soldier.i];
 		if (!domElement) {
 			var html = elem('div', {
 				c: 's',
-				i: 's' + soldier.i,
 				s: 'background:' + soldier.t.c
 			});
-			$('#m').insertAdjacentHTML('beforeEnd', html);
-			domElement = $('#s' + soldier.i);
+			var container = $('#m');
+			container.insertAdjacentHTML('beforeEnd', html);
+			domElement = soldierDivsById[soldier.i] = container.lastChild;			
 		}
+
+		// (re)calculate where the <div> should be
+		var center = region.c;
+		var totalSoldiers = soldierCount(gameState, region);
 		var offset = (-0.6 * totalSoldiers + index * 1.2);
 		domElement.style.left = (center[0]+offset-0.3) + '%';
 		domElement.style.top  = (center[1]+1.5+offset*0.2) + '%';
@@ -483,15 +498,25 @@ function playOneMove(state) {
 }
 
 function moveSoldiers(state, fromRegion, toRegion, howMany) {
-	// move the soldiers
 	var fromList = state.s[fromRegion.i];
 	var toList = state.s[toRegion.i] || (state.s[toRegion.i] = []);
+	var fromOwner = state.o[fromRegion.i];
+	var toOwner = state.o[toRegion.i];
+
+	// do we have a fight?
+	if (fromOwner != toOwner) {
+		// if the move was allowed, the incoming army is winning,
+		// so we don't check again - just kill the existing army
+		toList = state.s[toRegion.i] = [];
+	}
+
+	// move the soldiers
 	console.log(fromList, toList);
 	map(range(0, howMany), function() {
 		toList.push(fromList.shift());
 	});
 
-	// take ownership of the destination region
+	// if we got here, the fight is over - take ownership of the destination region
 	state.o[toRegion.i] = state.o[fromRegion.i];
 
 	// next move
