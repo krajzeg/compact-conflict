@@ -5,8 +5,9 @@
 var mapWidth = 30, 
 	mapHeight = 20, 
 	maxRegionSize = 8,
-	neededRegions = 20,
-	playerCount = 3;
+	neededRegions = 23,
+	playerCount = 3,
+	movesPerTurn = 1;
 
 // ==========================================================
 // Game-relevant constants
@@ -336,7 +337,7 @@ function updateDisplay(gameState) {
 		if (soldiersStillAlive.indexOf(parseInt(id)) < 0) {
 			// this is an ex-div - in other words, the soldier it represented is dead
 			$('#m').removeChild(div);
-			delete soldierDivsById[id]; // apparently, this should be safe to do during iteration - http://stackoverflow.com/a/19564686
+			delete soldierDivsById[id]; // surprisingly, this should be safe to do during iteration - http://stackoverflow.com/a/19564686
 		}
 	});
 
@@ -388,7 +389,7 @@ function makeInitialState(regions) {
 		p: players,
 		r: regions,
 		o: {}, t: {}, s: {},
-		m: {p: 0, m: MOVE_ARMY, l: 3}
+		m: {p: 0, m: MOVE_ARMY, l: movesPerTurn}
 	}
 
 	setupPlayerBases();
@@ -537,7 +538,7 @@ function nextTurn(state) {
 	});
 
 	// next turn, next player!
-	state.m = {p: (player.i + 1) % playerCount, m: MOVE_ARMY, l: 3};	
+	state.m = {p: (player.i + 1) % playerCount, m: MOVE_ARMY, l: movesPerTurn};	
 }
 
 function soldierCount(state, region) {
