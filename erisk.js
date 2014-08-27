@@ -24,7 +24,7 @@ earth.s = water;
 var elements = [earth, air, fire, water];
 
 // === The possible move types
-var MOVE_ARMY = 1;
+var MOVE_ARMY = 1, END_TURN = 2;
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -284,20 +284,27 @@ function prepareDisplay(container, gameState) {
 
 var uiCallbacks = {};
 
-function invokeUICallback(region, type) {
+function invokeUICallback(object, type) {
 	var cb = uiCallbacks[type];
 	if (cb)
-		cb(region);
+		cb(object);
 	return false;
 }
 
 function uiPickMoveArmy(player, state, reportMoveCallback) {
+	state.d = {
+		b: [
+			{i: 'end', t: 'End turn'}
+		]};
+
 	uiCallbacks.c = function(region) {
-		if (!state.d) {
+		if (!state.d.s) {
 			// no move in progress - start a new move if this is legal
 			if (state.o[region.i] != player) return;  // not our region, can't move
 			if (!soldierCount(state, region)) return; // no soldiers, can't move
-			state.d = {t: MOVE_ARMY, s: region, c: 1};
+			state.d.t = MOVE_ARMY;
+			state.d.s = region;
+			state.d.c = 1;
 			console.log("Starting move: " + region.i);
 		} else {
 			// we already have a move in progress
@@ -311,11 +318,15 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 			} else if (decisionState.s.n.indexOf(region) > -1) {
 				// one of the neighbours - let's finalize the move
 				console.log("Moving to: ", region.i);
-				uiCallbacks.c = 0;
+				uiCallbacks = {};
 				decisionState.d = region;
 				reportMoveCallback(decisionState);
 			}
 		}
+	}
+	uiCallbacks.b = function() {
+		// end turn
+		reportMoveCallback({t: END_TURN});
 	}
 }
 
@@ -376,11 +387,21 @@ function updateDisplay(gameState) {
 	}
 
 	function updateUI() {
+		// description
 		var moveState = gameState.m;
 		var activePlayer = gameState.p[moveState.p];
 		var html = elem('h3', {s: 'color: ' + activePlayer.d}, activePlayer.n + " player");
 		html += moveState.l + " move(s) remaining";
-		$("#o").innerHTML = html;
+		$("#d").innerHTML = html;
+
+		// buttons
+		$('#u').innerHTML = '';
+		var decisionState = gameState.d;
+		var buttons = map((decisionState && decisionState.b) || [], function(button) {
+			var buttonHTML = elem('a', {href: "#", i: button.i}, button.t);
+			$('#u').insertAdjacentHTML('beforeend', buttonHTML);
+			$("#" + button.i).onclick = invokeUICallback.bind(0, button.i, 'b');	
+		});
 	}
 }
 
@@ -471,6 +492,8 @@ function makeMove(state, move) {
 	var moveType = move.t;
 	if (moveType == MOVE_ARMY) {
 		moveSoldiers(state, move.s, move.d, move.c);
+	} else if (moveType == END_TURN) {
+		nextTurn(state);
 	}
 
 	return state;
@@ -506,6 +529,9 @@ function playOneMove(state) {
 		// schedule next move
 		setTimeout(playOneMove.bind(0, newState), 1);
 	});
+
+	// update display with the move in progress
+	updateDisplay(state);
 }
 
 function moveSoldiers(state, fromRegion, toRegion, howMany) {
