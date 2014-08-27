@@ -7,7 +7,7 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 23,
 	playerCount = 3,
-	movesPerTurn = 1;
+	movesPerTurn = 2;
 
 // ==========================================================
 // Game-relevant constants
@@ -506,19 +506,27 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 
 	// do we have a fight?
 	if (fromOwner != toOwner) {
-		// if the move was allowed, the incoming army is winning,
-		// so we don't check again - just kill the existing army
-		toList = state.s[toRegion.i] = [];
+		// first, the attackers kill some defenders
+		var incomingStrength = howMany;
+		var defendingStrength = toList.length;
+		var defenderCasualties = incomingStrength - defendingStrength;
+		map(range(0,defenderCasualties), function() { toList.shift() });
+		// now, defenders fight back
+		defendingStrength = toList.length;
+		howMany -= defendingStrength;
+		map(range(0,defendingStrength), function() { fromList.shift() });
 	}
 
-	// move the soldiers
-	console.log(fromList, toList);
-	map(range(0, howMany), function() {
-		toList.push(fromList.shift());
-	});
+	if (howMany > 0) {
+		// move the (remaining) soldiers
+		console.log(fromList, toList);
+		map(range(0, howMany), function() {
+			toList.push(fromList.shift());
+		});
 
-	// if we got here, the fight is over - take ownership of the destination region
-	state.o[toRegion.i] = state.o[fromRegion.i];
+		// if we got here, the fight is over - take ownership of the destination region
+		state.o[toRegion.i] = state.o[fromRegion.i];
+	}
 
 	// next move
 	var moveState = state.m;
