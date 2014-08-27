@@ -341,6 +341,8 @@ function updateDisplay(gameState) {
 		}
 	});
 
+	updateUI();
+
 	function updateRegionDisplay(region) {
 		var owner = gameState.o[region.i];
 		region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';		
@@ -372,6 +374,14 @@ function updateDisplay(gameState) {
 		domElement.style.left = (center[0]+offset-0.3) + '%';
 		domElement.style.top  = (center[1]+1.5+offset*0.2) + '%';
 	}
+
+	function updateUI() {
+		var moveState = gameState.m;
+		var activePlayer = gameState.p[moveState.p];
+		var html = elem('h3', {s: 'color: ' + activePlayer.d}, activePlayer.n + " player");
+		html += moveState.l + " move(s) remaining";
+		$("#o").innerHTML = html;
+	}
 }
 
 // ==========================================================
@@ -380,9 +390,9 @@ function updateDisplay(gameState) {
 
 function makeInitialState(regions) {
 	var players = [
-		{i:0, l: '#ffa', d:'#960'}, 
-		{i:1, l: '#f88', d:'#722'},
-		{i:2, l: '#d9d', d:'#537'}
+		{i:0, n: 'Yellow', l: '#ffa', d:'#960'}, 
+		{i:1, n: 'Red', l: '#f88', d:'#722'},
+		{i:2, n: 'Violet', l: '#d9d', d:'#537'}
 	];
 	var regions = generateMap();
 	var gameState = {
@@ -510,11 +520,15 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 		var incomingStrength = howMany;
 		var defendingStrength = toList.length;
 		var defenderCasualties = incomingStrength - defendingStrength;
+		console.log("Defender losses:", defenderCasualties);
 		map(range(0,defenderCasualties), function() { toList.shift() });
 		// now, defenders fight back
 		defendingStrength = toList.length;
-		howMany -= defendingStrength;
+		console.log("Attacker losses:", defendingStrength);
 		map(range(0,defendingStrength), function() { fromList.shift() });
+		// no conquest if there are defenders left
+		if (defendingStrength)
+			howMany = 0;
 	}
 
 	if (howMany > 0) {
