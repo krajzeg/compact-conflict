@@ -326,7 +326,6 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 			state.d.t = MOVE_ARMY;
 			state.d.s = region;
 			state.d.c = 1;
-			console.log("Starting move: " + region.i);
 		} else {
 			// we already have a move in progress
 			var decisionState = state.d;
@@ -335,10 +334,8 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 				// the one we're moving army from - take more soldiers with us
 				if (decisionState.c < soldierCount(state, region))
 					decisionState.c++;
-				console.log("More soldiers.");
 			} else if (decisionState.s.n.indexOf(region) > -1) {
 				// one of the neighbours - let's finalize the move
-				console.log("Moving to: ", region.i);
 				uiCallbacks = {};
 				decisionState.d = region;
 				reportMoveCallback(decisionState);
@@ -419,7 +416,7 @@ function updateDisplay(gameState) {
 		// buttons
 		$('#u').innerHTML = '';
 		var decisionState = gameState.d;
-		var buttons = map((decisionState && decisionState.b) || [], function(button) {
+		map((decisionState && decisionState.b) || [], function(button) {
 			var buttonHTML = elem('a', {href: "#", i: button.i}, button.t);
 			$('#u').insertAdjacentHTML('beforeend', buttonHTML);
 			$("#" + button.i).onclick = invokeUICallback.bind(0, button.i, 'b');	
@@ -505,10 +502,6 @@ function makeInitialState(regions) {
 
 var soldierCounter;
 
-function requiredTypeOfMove(state) {
-	return MOVE_ARMY; // for testing
-}
-
 function pickMove(player, state, typeOfMove, reportMoveCallback) {
 	// for testing
 	uiPickMoveArmy(player, state, reportMoveCallback);
@@ -574,11 +567,9 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 		var incomingStrength = howMany;
 		var defendingStrength = toList.length;
 		var defenderCasualties = incomingStrength - defendingStrength;
-		console.log("Defender losses:", defenderCasualties);
 		map(range(0,defenderCasualties), function() { toList.shift() });
 		// now, defenders fight back
 		defendingStrength = toList.length;
-		console.log("Attacker losses:", defendingStrength);
 		map(range(0,defendingStrength), function() { fromList.shift() });
 		// no conquest if there are defenders left
 		if (defendingStrength)
@@ -587,7 +578,6 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 
 	if (howMany > 0) {
 		// move the (remaining) soldiers
-		console.log(fromList, toList);
 		map(range(0, howMany), function() {
 			toList.push(fromList.shift());
 		});
