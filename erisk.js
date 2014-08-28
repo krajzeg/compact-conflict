@@ -75,6 +75,27 @@ function deepCopy(obj, depth) {
 	});
 	return copy;
 }
+function identity(x) { return x; }
+function min(seq, key) {
+	key = key || identity;
+	var smallestValue = key(seq[0]), smallestElement;
+	map(seq, function(e) {
+		if (key(e) <= smallestValue) {
+			smallestElement = e;
+			smallestValue = key(e);
+		}
+	});
+	return smallestElement;
+}
+function pairwise(array, fn) {
+	var result = [];
+	map(array, function(elem1, index) {
+		map(array.slice(index+1), function(elem2) {
+			result.push(fn(elem1, elem2));
+		});
+	});
+	return result;
+}
 
 // ==========================================================
 // This part of the code deals with procedural map generation
@@ -326,6 +347,7 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 	}
 	uiCallbacks.b = function() {
 		// end turn
+		uiCallbacks = {};
 		reportMoveCallback({t: END_TURN});
 	}
 }
@@ -422,51 +444,57 @@ function makeInitialState(regions) {
 		o: {}, t: {}, s: {},
 		m: {p: 0, m: MOVE_ARMY, l: movesPerTurn}
 	}
-
-	setupPlayerBases();
+	
+	setupTemples();
 
 	return gameState;
 
-	function distanceSquared(region1, region2) {
+	function distance(region1, region2) {
 		var c1 = centerOfWeight(region1.p), c2 = centerOfWeight(region2.p),
 			dx = c1[0]-c2[0];
 			dy = c1[1]-c2[1];
-		return dx*dx+dy*dy;
+		return Math.sqrt(dx*dx+dy*dy);
+	}
+
+	function distanceScore(regions) {
+		return -min(pairwise(regions, distance));
 	}
 
 	function randomRegion() {
 		return regions[rint(0, regions.length)];
 	}
 
-	function setupPlayerBases() {
+	function setupTemples() {
 		// pick three regions that are as far away as possible from each other
-		var bestDistance = 0.0, bestRegions;
-		for (var i = 0; i < 1000; i++) {
-			var r1 = randomRegion(), r2 = randomRegion(), r3 = randomRegion();			
-			var distance = distanceSquared(r1, r2) * distanceSquared(r1, r3) * distanceSquared(r2, r3);
-			if (distance > bestDistance) {
-				bestDistance = distance;
-				bestRegions = [r1, r2, r3];
-			}
-		}
+		// for the players' initial temples
+		var possibleSetups = map(range(0,1000), function() {
+			return map(range(0,3), randomRegion);
+		});
+		var templeRegions = min(possibleSetups, distanceScore);
 
 		// we have the regions, set up each player
 		map(players, function(player, index) {
-			var region = bestRegions[index];
+			var region = templeRegions[index];
 			// make one of the regions your own
 			gameState.o[region.i] = player;
-			// put a temple and 4 soldiers in it
-			var element = elements[rint(0,4)];
-			putTemple(region, element);
-			map(range(0,4), function() {
-				addSoldier(gameState, region, element);
+			// put a temple and 3 soldiers in it
+			putTemple(region, 3);
+		});
+
+		// setup neutral temples
+		map(range(0,3), function() {
+			var bestRegion = min(gameState.r, function(region) {
+				return distanceScore(templeRegions.concat(region));
 			});
+			putTemple(bestRegion, 2);
+			templeRegions.push(bestRegion);
 		});
 	}
 
-	function putTemple(region, element) {
+	function putTemple(region, soldierCount) {
 		var index = region.i;
-		gameState.t[index] = {r: region, i: index, t: element};
+		gameState.t[index] = {r: region, i: index, t: none};
+		addSoldiers(gameState, region, none, soldierCount);
 	}
 }
 
@@ -581,7 +609,7 @@ function nextTurn(state) {
 	forEachProperty(state.t, function(temple, regionIndex) {
 		if (state.o[regionIndex] == player) {
 			// this is our temple, add a soldier of the temple's element
-			addSoldier(state, temple.r, temple.t);
+			addSoldiers(state, temple.r, temple.t, 1);
 		}
 	});
 
@@ -594,16 +622,18 @@ function soldierCount(state, region) {
 	return list ? list.length : 0;
 }
 
-function addSoldier(state, region, element) {
-	soldierCounter = (soldierCounter + 1) || 0;
+function addSoldiers(state, region, element, count) {
+	map(range(0,count), function() {
+		soldierCounter = (soldierCounter + 1) || 0;
 
-	var soldierList = state.s[region.i];
-	if (!soldierList)
-		soldierList = state.s[region.i] = [];
+		var soldierList = state.s[region.i];
+		if (!soldierList)
+			soldierList = state.s[region.i] = [];
 
-	soldierList.push({
-		i: soldierCounter++,
-		t: element
+		soldierList.push({
+			i: soldierCounter++,
+			t: element
+		});
 	});
 }
 
