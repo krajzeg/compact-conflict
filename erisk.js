@@ -7,7 +7,8 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 23,
 	playerCount = 3,
-	movesPerTurn = 2;
+	movesPerTurn = 2,
+	turnCount = 20;
 
 // ==========================================================
 // Game-relevant constants
@@ -409,7 +410,10 @@ function updateDisplay(gameState) {
 		// description
 		var moveState = gameState.m;
 		var activePlayer = gameState.p[moveState.p];
-		var html = elem('h3', {s: 'color: ' + activePlayer.d}, activePlayer.n + " player");
+		var turnNumber = gameState.m.t;
+
+		var html = elem('div', {}, 'Turn ' + turnNumber + ' / ' + turnCount);
+		html += elem('h3', {s: 'color: ' + activePlayer.d}, activePlayer.n + " player");
 		html += moveState.l + " move(s) remaining";
 		$("#d").innerHTML = html;
 
@@ -439,7 +443,7 @@ function makeInitialState(regions) {
 		p: players,
 		r: regions,
 		o: {}, t: {}, s: {},
-		m: {p: 0, m: MOVE_ARMY, l: movesPerTurn}
+		m: {t: 1, p: 0, m: MOVE_ARMY, l: movesPerTurn}
 	}
 	
 	setupTemples();
@@ -604,7 +608,9 @@ function nextTurn(state) {
 	});
 
 	// next turn, next player!
-	state.m = {p: (player.i + 1) % playerCount, m: MOVE_ARMY, l: movesPerTurn};	
+	var nextPlayer = (player.i + 1) % playerCount;
+	var turnNumber = state.m.t + (nextPlayer ? 0 : 1); 
+	state.m = {t: turnNumber, p: nextPlayer, m: MOVE_ARMY, l: movesPerTurn};	
 }
 
 function soldierCount(state, region) {
