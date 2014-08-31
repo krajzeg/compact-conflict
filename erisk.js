@@ -332,33 +332,40 @@ var uiCallbacks = {};
 
 function invokeUICallback(object, type) {
 	var cb = uiCallbacks[type];
-	if (cb)
+	if (cb) {
 		cb(object);
+	}
+
 	return false;
 }
 
 function uiPickMoveArmy(player, state, reportMoveCallback) {
-	state.d = {
+	var cleanState = {
 		b: [
-			{i: 'end', t: 'End turn'}
-		]};
+			{t: 'Cancel move', h:1},
+			{t: 'End turn'}
+		]
+	};
+
+	setCleanState();
 
 	uiCallbacks.c = function(region) {
+		var totalSoldiers = soldierCount(state, region);
 		if (!state.d.s) {
 			// no move in progress - start a new move if this is legal
 			if (state.o[region.i] != player) return;  // not our region, can't move
-			if (!soldierCount(state, region)) return; // no soldiers, can't move
+			if (!totalSoldiers) return; // no soldiers, can't move
 			state.d.t = MOVE_ARMY;
 			state.d.s = region;
-			state.d.c = 1;
+			state.d.c = totalSoldiers;
+			state.d.b[0].h = 0;
 		} else {
 			// we already have a move in progress
 			var decisionState = state.d;
 			// what region did we click?
 			if (region == decisionState.s) {
-				// the one we're moving army from - take more soldiers with us
-				if (decisionState.c < soldierCount(state, region))
-					decisionState.c++;
+				// the one we're moving an army from - tweak soldier count
+				decisionState.c = decisionState.c % totalSoldiers + 1;
 			} else if (decisionState.s.n.indexOf(region) > -1) {
 				// one of the neighbours - let's finalize the move
 				uiCallbacks = {};
@@ -366,11 +373,22 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 				reportMoveCallback(decisionState);
 			}
 		}
+		updateDisplay(state);
 	}
-	uiCallbacks.b = function() {
-		// end turn
-		uiCallbacks = {};
-		reportMoveCallback({t: END_TURN});
+	uiCallbacks.b = function(which) {
+		if (which == 1) {
+			// end turn
+			uiCallbacks = {};
+			reportMoveCallback({t: END_TURN});
+		} else {
+			// cancel move
+			setCleanState();
+		}
+	}
+
+	function setCleanState() {
+		state.d = deepCopy(cleanState, 3);
+		updateDisplay(state);
 	}
 }
 
@@ -428,6 +446,13 @@ function updateDisplay(gameState) {
 		var offset = (-0.6 * totalSoldiers + index * 1.2);
 		domElement.style.left = (center[0]+offset-0.3) + '%';
 		domElement.style.top  = (center[1]+1.5+offset*0.2) + '%';
+
+		// selected?
+		var decisionState = gameState.d || {};	
+		if ((decisionState.s == region) && (index < decisionState.c))
+			domElement.classList.add('l');
+		else
+			domElement.classList.remove('l');
 	}
 
 	function updateUI() {
@@ -444,17 +469,19 @@ function updateDisplay(gameState) {
 		// move info
 		var info;
 		if (moveState.m == MOVE_ARMY) {
-			info = "MOVE PHASE" + div({c: 'ds'}, 'Moves left: ' + moveState.l);
+			info = "Move phase" + div({c: 'ds'}, 'Moves left: ' + moveState.l);
 		}
 		$('#in').innerHTML = info;
 
 		// buttons
 		$('#u').innerHTML = '';
 		var decisionState = gameState.d;
-		map((decisionState && decisionState.b) || [], function(button) {
-			var buttonHTML = elem('a', {href: "#", i: button.i}, button.t);
+		map((decisionState && decisionState.b) || [], function(button, index) {
+			if (button.h) return;
+			var id = 'b' + index;
+			var buttonHTML = elem('a', {href: "#", i: id}, button.t);
 			$('#u').insertAdjacentHTML('beforeend', buttonHTML);
-			$("#" + button.i).onclick = invokeUICallback.bind(0, button.i, 'b');	
+			$("#" + id).onclick = invokeUICallback.bind(0, index, 'b');	
 		});
 	}
 }
