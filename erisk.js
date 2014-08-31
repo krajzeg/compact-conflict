@@ -8,7 +8,7 @@ var mapWidth = 30,
 	neededRegions = 23,
 	playerCount = 3,
 	movesPerTurn = 2,
-	turnCount = 20;
+	turnCount = 15;
 
 // ==========================================================
 // Game-relevant constants
@@ -281,7 +281,7 @@ function prepareDisplay(container, gameState) {
 	});
 
 	makeTemples();
-	makeInitialUI();
+	makeUI();
 
 	function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
 		return elem('g', {}, map(regions, function(region, index) {
@@ -308,7 +308,7 @@ function prepareDisplay(container, gameState) {
 		});
 	}
 
-	function makeInitialUI() { 
+	function makeUI() { 
 		var moveState = gameState.m;
 		var activePlayer = gameState.p[moveState.p];
 		var turnNumber = gameState.m.t;
@@ -317,6 +317,8 @@ function prepareDisplay(container, gameState) {
 		html += div({c: 'sc un'}, map(gameState.p, function(player) {
 			return div({i: 'pl' + player.i, c: 'pli', style: 'background: ' + player.d}, player.n);
 		}).join(''));
+
+		html += div({c: 'sc', i: 'in'});		
 
 		$("#d").innerHTML = html;
 	}
@@ -429,14 +431,22 @@ function updateDisplay(gameState) {
 	}
 
 	function updateUI() {
+		var moveState = gameState.m;
+
 		// turn counter
 		$('#tc').innerHTML = "Turn <b>" + gameState.m.t + "</b> / " + turnCount;
 
 		// player activation
 		map(gameState.p, function(player) {
-			var active = player.i == gameState.m.p;
-			$('#pl' + player.i).className = active ? 'pl' : 'pi';
-		})
+			$('#pl' + player.i).className = (player.i == moveState.p) ? 'pl' : 'pi';
+		});
+
+		// move info
+		var info;
+		if (moveState.m == MOVE_ARMY) {
+			info = "MOVE PHASE" + div({c: 'ds'}, 'Moves left: ' + moveState.l);
+		}
+		$('#in').innerHTML = info;
 
 		// buttons
 		$('#u').innerHTML = '';
