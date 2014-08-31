@@ -4,9 +4,9 @@
 
 var mapWidth = 30, 
 	mapHeight = 20, 
-	maxRegionSize = 8,
-	neededRegions = 23,
-	playerCount = 3,
+	maxRegionSize = 9,
+	neededRegions = 20,
+	playerCount = 2,
 	movesPerTurn = 3,
 	turnCount = 15;
 
@@ -517,8 +517,8 @@ function preserveAspect() {
 function makeInitialState(regions) {
 	var players = [
 		{i:0, n: 'Yellow', l: '#ffa', d:'#960'}, 
-		{i:1, n: 'Red', l: '#f88', d:'#722'},
-		{i:2, n: 'Violet', l: '#d9d', d:'#537'}
+		{i:1, n: 'Red', l: '#f88', d:'#722'}/*,
+		{i:2, n: 'Violet', l: '#d9d', d:'#537'}*/
 	];
 	var regions = generateMap();
 	var gameState = {
@@ -552,7 +552,7 @@ function makeInitialState(regions) {
 		// pick three regions that are as far away as possible from each other
 		// for the players' initial temples
 		var possibleSetups = map(range(0,1000), function() {
-			return map(range(0,3), randomRegion);
+			return map(range(0, playerCount), randomRegion);
 		});
 		var templeRegions = min(possibleSetups, distanceScore);
 
@@ -566,11 +566,11 @@ function makeInitialState(regions) {
 		});
 
 		// setup neutral temples
-		map(range(0,3), function() {
+		map(range(0, playerCount), function() {
 			var bestRegion = min(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
-			putTemple(bestRegion, 2);
+			putTemple(bestRegion, 3);
 			templeRegions.push(bestRegion);
 		});
 	}
@@ -652,14 +652,21 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 		// first, the attackers kill some defenders
 		var incomingStrength = howMany;
 		var defendingStrength = toList.length;
-		var defenderCasualties = incomingStrength - defendingStrength;
-		map(range(0,defenderCasualties), function() { toList.shift() });
-		// now, defenders fight back
-		defendingStrength = toList.length;
-		map(range(0,defendingStrength), function() { fromList.shift() });
-		// no conquest if there are defenders left
-		if (defendingStrength)
-			howMany = 0;
+		
+		if (defendingStrength) {
+			var repeats = min([incomingStrength, defendingStrength]);
+			var attackerWinChance = 100 * (incomingStrength / defendingStrength);
+			var attackerDamage = 0;
+			map(range(0,repeats), function() {
+				if (rint(0, 100 + attackerWinChance) < 100)
+					attackerDamage++;
+			});
+
+			map(range(0,attackerDamage), function() { fromList.shift() });
+			map(range(0,repeats-attackerDamage), function() { toList.shift() });
+			if (toList.length)
+				howMany = 0;
+		}
 	}
 
 	if (howMany > 0) {
