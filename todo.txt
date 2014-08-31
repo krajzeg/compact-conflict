@@ -1,20 +1,4 @@
-+ Bailing out on generation after fixed number of iterations
-+ Two moves per turn
-+ Disallowing same army moving twice
-+ Seeding neutral temples to conquer
-+ Battle mechanics:
-	- 1 guy kills 1 guy
-	- double the strength kills with no casualties
-	- attacking with a dominating element makes each of your soldiers count as 2
-
-	1 v 5 = 5d
-	2 v 5 = 4d
-	3 v 5 = 4d
-	4 v 5 = 3d
-	5 v 5 = 3d
-	==========
-	6 v 5 = 2a
-	7 v 5 = 4a
-	8 v 5 = 6a
-	9 v 5 = 8a
-	10 v 5 = 10a
+IDEAS:
+	- make $('a', '12') do querySelector('#a12')
+	- innerHTML setting into its own function
+	

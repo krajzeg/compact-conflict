@@ -7,7 +7,7 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 23,
 	playerCount = 3,
-	movesPerTurn = 2,
+	movesPerTurn = 3,
 	turnCount = 15;
 
 // ==========================================================
@@ -321,7 +321,8 @@ function prepareDisplay(container, gameState) {
 				c: 'pli', 
 				style: 'background: ' + player.d
 			}, player.n + 
-				div({c: 'ad', i: 'pr' + pid})
+				div({c: 'ad', i: 'pr' + pid}) +
+				div({c: 'ad', i: 'pc' + pid})
 			);
 		}).join(''));
 
@@ -472,6 +473,7 @@ function updateDisplay(gameState) {
 		map(gameState.p, function(player, index) {			
 			$('#pl' + index).className = (index == moveState.p) ? 'pl' : 'pi';
 			$('#pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;';
+			$('#pc' + index).innerHTML = gameState.c[player.i] + '$';
 		});
 
 		// move info
@@ -523,6 +525,7 @@ function makeInitialState(regions) {
 		p: players,
 		r: regions,
 		o: {}, t: {}, s: {},
+		c: {0: 0, 1: 0, 2: 0},
 		m: {t: 1, p: 0, m: MOVE_ARMY, l: movesPerTurn}
 	}
 	
@@ -544,7 +547,7 @@ function makeInitialState(regions) {
 	function randomRegion() {
 		return regions[rint(0, regions.length)];
 	}
-
+ 
 	function setupTemples() {
 		// pick three regions that are as far away as possible from each other
 		// for the players' initial temples
@@ -567,7 +570,7 @@ function makeInitialState(regions) {
 			var bestRegion = min(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
-			putTemple(bestRegion, 3);
+			putTemple(bestRegion, 2);
 			templeRegions.push(bestRegion);
 		});
 	}
@@ -616,7 +619,8 @@ function copyState(state) {
 		m: deepCopy(state.m, 1), // this will be 1, once the "move state" gets more complex
 		o: deepCopy(state.o, 1),
 		t: deepCopy(state.t, 2),
-		s: deepCopy(state.s, 3)
+		s: deepCopy(state.s, 3),
+		c: deepCopy(state.c, 1)
 		// and some others are completely omitted - namely 'd', the current "move decision" partial state
 	};
 }
@@ -629,8 +633,6 @@ function playOneMove(state) {
 	pickMove(controllingPlayer, state, typeOfMove, function(move) {
 		// the move is chosen - update state to a new immutable copy
 		var newState = makeMove(state, move);
-		// update display according to that new state
-		updateDisplay(newState);
 		// schedule next move
 		setTimeout(playOneMove.bind(0, newState), 1);
 	});
@@ -679,6 +681,9 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 function nextTurn(state) {
 	var player = state.p[state.m.p];
 	
+	// cash is produced
+	state.c[player.i] += regionCount(state, player);
+
 	// temples produce one soldier per turn automatically
 	forEachProperty(state.t, function(temple, regionIndex) {
 		if (state.o[regionIndex] == player) {
@@ -730,7 +735,9 @@ function regionCount(state, player) {
 (wnd.onresize = preserveAspect)();
 
 // start the game
-var state = makeInitialState();
-prepareDisplay($('#m'), state);
-updateDisplay(state);
-playOneMove(state);
+!function() {
+	var state = makeInitialState();
+	prepareDisplay($('#m'), state);
+	updateDisplay(state);
+	playOneMove(state);
+}();
