@@ -315,7 +315,14 @@ function prepareDisplay(container, gameState) {
 
 		var html = div({i: 'tc', c: 'sc'});
 		html += div({c: 'sc un'}, map(gameState.p, function(player) {
-			return div({i: 'pl' + player.i, c: 'pli', style: 'background: ' + player.d}, player.n);
+			var pid = player.i;
+			return div({
+				i: 'pl' + pid, 
+				c: 'pli', 
+				style: 'background: ' + player.d
+			}, player.n + 
+				div({c: 'ad', i: 'pr' + pid})
+			);
 		}).join(''));
 
 		html += div({c: 'sc', i: 'in'});		
@@ -462,8 +469,9 @@ function updateDisplay(gameState) {
 		$('#tc').innerHTML = "Turn <b>" + gameState.m.t + "</b> / " + turnCount;
 
 		// player activation
-		map(gameState.p, function(player) {
-			$('#pl' + player.i).className = (player.i == moveState.p) ? 'pl' : 'pi';
+		map(gameState.p, function(player, index) {			
+			$('#pl' + index).className = (index == moveState.p) ? 'pl' : 'pi';
+			$('#pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;';
 		});
 
 		// move info
@@ -559,7 +567,7 @@ function makeInitialState(regions) {
 			var bestRegion = min(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
-			putTemple(bestRegion, 2);
+			putTemple(bestRegion, 3);
 			templeRegions.push(bestRegion);
 		});
 	}
@@ -703,6 +711,15 @@ function addSoldiers(state, region, element, count) {
 			t: element
 		});
 	});
+}
+
+function regionCount(state, player) {
+	var total = 0;
+	map(state.r, function(region) {
+		if (state.o[region.i] == player)
+			total++;
+	});
+	return total;
 }
 
 // ==========================================================
