@@ -31,7 +31,15 @@ var MOVE_ARMY = 1, END_TURN = 2;
 // Helper functions used for brevity or convenience.
 // ==========================================================
 
-var sin = Math.sin, cos = Math.cos, wnd = window, doc = document, $ = doc.querySelector.bind(doc);
+var sin = Math.sin, 
+	cos = Math.cos, 
+	
+	wnd = window, 
+	doc = document, 
+	$ = doc.querySelector.bind(doc)
+
+	div = elem.bind(0,'div');
+
 function rint(low,high) {
 	return Math.floor(low+Math.random()*(high-low));
 }
@@ -273,6 +281,7 @@ function prepareDisplay(container, gameState) {
 	});
 
 	makeTemples();
+	makeInitialUI();
 
 	function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
 		return elem('g', {}, map(regions, function(region, index) {
@@ -287,16 +296,29 @@ function prepareDisplay(container, gameState) {
 				id = 'tp' + index, iid = 'ti' + index,
 				style = 'left:' + (center[0]-1.5) + '%;top:' + (center[1]-4) + '%';
 			
-			var templeHTML = elem('div', {
+			var templeHTML = div({
 				i: id,
 				c: 'o',
 				s: style
-			}, elem('div', {i: iid, c: 'i'}));
+			}, div({i: iid, c: 'i'}));
 
 			container.insertAdjacentHTML('beforeend', templeHTML);
 			temple.e = $('#'+id);
 			temple.i = $('#'+iid);			
 		});
+	}
+
+	function makeInitialUI() { 
+		var moveState = gameState.m;
+		var activePlayer = gameState.p[moveState.p];
+		var turnNumber = gameState.m.t;
+
+		var html = div({i: 'tc', c: 'sc'});
+		html += div({c: 'sc un'}, map(gameState.p, function(player) {
+			return div({i: 'pl' + player.i, c: 'pli', style: 'background: ' + player.d}, player.n);
+		}).join(''));
+
+		$("#d").innerHTML = html;
 	}
 }
 
@@ -389,7 +411,7 @@ function updateDisplay(gameState) {
 		// find or create a <div> for showing the soldier
 		var domElement = soldierDivsById[soldier.i];
 		if (!domElement) {
-			var html = elem('div', {
+			var html = div({
 				c: 's',
 				s: 'background:' + soldier.t.c
 			});
@@ -407,15 +429,14 @@ function updateDisplay(gameState) {
 	}
 
 	function updateUI() {
-		// description
-		var moveState = gameState.m;
-		var activePlayer = gameState.p[moveState.p];
-		var turnNumber = gameState.m.t;
+		// turn counter
+		$('#tc').innerHTML = "Turn <b>" + gameState.m.t + "</b> / " + turnCount;
 
-		var html = elem('div', {}, 'Turn ' + turnNumber + ' / ' + turnCount);
-		html += elem('h3', {s: 'color: ' + activePlayer.d}, activePlayer.n + " player");
-		html += moveState.l + " move(s) remaining";
-		$("#d").innerHTML = html;
+		// player activation
+		map(gameState.p, function(player) {
+			var active = player.i == gameState.m.p;
+			$('#pl' + player.i).className = active ? 'pl' : 'pi';
+		})
 
 		// buttons
 		$('#u').innerHTML = '';
