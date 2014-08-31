@@ -4,9 +4,9 @@
 
 var mapWidth = 30, 
 	mapHeight = 20, 
-	maxRegionSize = 9,
-	neededRegions = 20,
-	playerCount = 2,
+	maxRegionSize = 8,
+	neededRegions = 22,
+	playerCount = 3,
 	movesPerTurn = 3,
 	turnCount = 15;
 
@@ -309,10 +309,6 @@ function prepareDisplay(container, gameState) {
 	}
 
 	function makeUI() { 
-		var moveState = gameState.m;
-		var activePlayer = gameState.p[moveState.p];
-		var turnNumber = gameState.m.t;
-
 		var html = div({i: 'tc', c: 'sc'});
 		html += div({c: 'sc un'}, map(gameState.p, function(player) {
 			var pid = player.i;
@@ -516,16 +512,16 @@ function preserveAspect() {
 
 function makeInitialState(regions) {
 	var players = [
-		{i:0, n: 'Yellow', l: '#ffa', d:'#960'}, 
-		{i:1, n: 'Red', l: '#f88', d:'#722'}/*,
-		{i:2, n: 'Violet', l: '#d9d', d:'#537'}*/
-	];
+		{i:0, n: 'Amber', l: '#ffa', d:'#960'}, 
+		{i:1, n: 'Crimson', l: '#f88', d:'#722'},
+		{i:2, n: 'Lavender', l: '#d9d', d:'#537'},
+		{i:3, n: 'Emerald', l: '#9d9', d:'#262'}
+	].slice(0, playerCount);
 	var regions = generateMap();
 	var gameState = {
 		p: players,
 		r: regions,
-		o: {}, t: {}, s: {},
-		c: {0: 0, 1: 0, 2: 0},
+		o: {}, t: {}, s: {}, c: {},
 		m: {t: 1, p: 0, m: MOVE_ARMY, l: movesPerTurn}
 	}
 	
@@ -549,6 +545,11 @@ function makeInitialState(regions) {
 	}
  
 	function setupTemples() {
+		// give the players some cash (or not)
+		map(players, function(player, index) {
+			gameState.c[index] = 0;
+		});
+
 		// pick three regions that are as far away as possible from each other
 		// for the players' initial temples
 		var possibleSetups = map(range(0,1000), function() {
