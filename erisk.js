@@ -31,7 +31,7 @@ var MOVE_ARMY = 1, END_TURN = 2;
 // Helper functions used for brevity or convenience.
 // ==========================================================
 
-var sin = Math.sin, cos = Math.cos, doc = document, $ = doc.querySelector.bind(doc);
+var sin = Math.sin, cos = Math.cos, wnd = window, doc = document, $ = doc.querySelector.bind(doc);
 function rint(low,high) {
 	return Math.floor(low+Math.random()*(high-low));
 }
@@ -428,6 +428,20 @@ function updateDisplay(gameState) {
 	}
 }
 
+function preserveAspect() {
+	var w = wnd.innerWidth, h = wnd.innerHeight, aspect = 1.65, px = 'px';
+	if (w / h > aspect) {
+		w = h * aspect;
+	} else {
+		h = w / aspect;
+	}
+
+	var styles = $('#c').style;
+	styles.width = w + px;
+	styles.height = h + px;
+	styles.fontSize = 0.025 * h + px;
+}
+
 // ==========================================================
 // Preparing the initial game state happens here
 // ==========================================================
@@ -633,11 +647,14 @@ function addSoldiers(state, region, element, count) {
 	});
 }
 
-
 // ==========================================================
 // This part of the code initalizes a new game.
 // ==========================================================
 
+// keep the aspect of the gameplay area correct
+(wnd.onresize = preserveAspect)();
+
+// start the game
 var state = makeInitialState();
 prepareDisplay($('#m'), state);
 updateDisplay(state);
