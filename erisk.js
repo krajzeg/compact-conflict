@@ -265,7 +265,7 @@ function prepareDisplay(container, gameState) {
 	var defs = elem('defs', {}, 		
 		makeGradient('b', '#88f', '#113') +
 		makeGradient('l', '#fc9', '#530') +
-        makeGradient('lh', '#fea', '#972') +
+        makeGradient('lh', '#fea', '#742') +
 		makeGradient('d', '#210', '#000') +
 		makeGradient('w', '#55f', '#003') +
 		map(gameState.p, function(player, index) {
@@ -376,6 +376,7 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
                 state.d.s = region;
                 state.d.c = totalSoldiers;
                 state.d.b[0].h = 0;
+                state.d.h = regionPlusNeighbours(region);
             }
 		} else {
 			// we already have a move in progress
@@ -412,6 +413,11 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 
     function regionHasActiveArmy(region) {
         return (state.o[region.i] == player) && soldierCount(state, region) && (!contains(state.m.z, region));
+    }
+    function regionPlusNeighbours(region) {
+        return state.r.filter(function(r) {
+            return region == r || contains(region.n, r)
+        });
     }
 }
 
