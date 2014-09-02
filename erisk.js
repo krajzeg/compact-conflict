@@ -104,6 +104,9 @@ function sum(seq, key) {
     });
     return total;
 }
+function contains(seq, elem) {
+    return seq && (seq.indexOf(elem) >= 0);
+}
 function pairwise(array, fn) {
 	var result = [];
 	map(array, function(elem1, index) {
@@ -368,12 +371,12 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 		var totalSoldiers = soldierCount(state, region);
 		if (!state.d.s) {
 			// no move in progress - start a new move if this is legal
-			if (state.o[region.i] != player) return;  // not our region, can't move
-			if (!totalSoldiers) return; // no soldiers, can't move
-			state.d.t = MOVE_ARMY;
-			state.d.s = region;
-			state.d.c = totalSoldiers;
-			state.d.b[0].h = 0;
+            if (regionHasActiveArmy(region)) {
+                state.d.t = MOVE_ARMY;
+                state.d.s = region;
+                state.d.c = totalSoldiers;
+                state.d.b[0].h = 0;
+            }
 		} else {
 			// we already have a move in progress
 			var decisionState = state.d;
@@ -403,14 +406,12 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 
 	function setCleanState() {
 		state.d = deepCopy(cleanState, 3);
-        state.d.h = regionsWithActiveArmies();
+        state.d.h = state.r.filter(regionHasActiveArmy);
 		updateDisplay(state);
 	}
 
-    function regionsWithActiveArmies() {
-        return state.r.filter(function(region) {
-            return (state.o[region.i] == player) && soldierCount(state, region);
-        });
+    function regionHasActiveArmy(region) {
+        return (state.o[region.i] == player) && soldierCount(state, region) && (!contains(state.m.z, region));
     }
 }
 
@@ -688,8 +689,13 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 
 			map(range(0,attackerDamage), function() { fromList.shift() });
 			map(range(0,repeats-attackerDamage), function() { toList.shift() });
-			if (toList.length)
-				howMany = 0;
+
+            if (toList.length) {
+                // if there are defenders left, nobody will move in
+                howMany = 0;
+            } else {
+                // conquered - add to list of conquered regions to prevent moves
+            }
 		}
 	}
 
@@ -699,9 +705,13 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 			toList.push(fromList.shift());
 		});
 
-		// if we got here, the fight is over - take ownership of the destination region
-		state.o[toRegion.i] = state.o[fromRegion.i];
-	}
+		// if this didn't belong to us, it now does
+        if (fromOwner != toOwner) {
+            state.o[toRegion.i] = fromOwner;
+            // mark as conquered to prevent moves from this region in the same turn
+            state.m.z = (state.m.z || []).concat(toRegion);
+        }
+    }
 
 	// next move
 	var moveState = state.m;
