@@ -20,9 +20,7 @@ var air   = {c: '#ccf', t:'&#39080;', s: earth};
 var fire  = {c: '#f00', t:'&#28779;', s: air};
 var water = {c: '#06c', t:'&#27700;', s: fire};
 var none = {c: '#777', t:''};
-
 earth.s = water;
-var elements = [earth, air, fire, water];
 
 // === The possible move types
 var MOVE_ARMY = 1, END_TURN = 2;
@@ -36,7 +34,7 @@ var sin = Math.sin,
 	
 	wnd = window, 
 	doc = document, 
-	$ = doc.querySelector.bind(doc)
+	$ = doc.querySelector.bind(doc);
 
 	div = elem.bind(0,'div');
 
@@ -66,7 +64,7 @@ function elem(tag,attrs,contents) {
 		c: 'class',
 		s: 'style',
 		i: 'id'
-	}
+	};
 	var html = "<" + tag + " ";
 	for (var attributeName in attrs) {
 		html += (expanded[attributeName] || attributeName) + "='" + attrs[attributeName] + "'";
@@ -378,7 +376,7 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 			}
 		}
 		updateDisplay(state);
-	}
+	};
 	uiCallbacks.b = function(which) {
 		if (which == 1) {
 			// end turn
@@ -388,7 +386,7 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 			// cancel move
 			setCleanState();
 		}
-	}
+	};
 
 	function setCleanState() {
 		state.d = deepCopy(cleanState, 3);
@@ -510,7 +508,7 @@ function preserveAspect() {
 // Preparing the initial game state happens here
 // ==========================================================
 
-function makeInitialState(regions) {
+function makeInitialState() {
 	var players = [
 		{i:0, n: 'Amber', l: '#ffa', d:'#960'}, 
 		{i:1, n: 'Crimson', l: '#f88', d:'#722'},
@@ -523,7 +521,7 @@ function makeInitialState(regions) {
 		r: regions,
 		o: {}, t: {}, s: {}, c: {},
 		m: {t: 1, p: 0, m: MOVE_ARMY, l: movesPerTurn}
-	}
+	};
 	
 	setupTemples();
 
@@ -531,7 +529,7 @@ function makeInitialState(regions) {
 
 	function distance(region1, region2) {
 		var c1 = centerOfWeight(region1.p), c2 = centerOfWeight(region2.p),
-			dx = c1[0]-c2[0];
+			dx = c1[0]-c2[0],
 			dy = c1[1]-c2[1];
 		return Math.sqrt(dx*dx+dy*dy);
 	}
@@ -596,7 +594,7 @@ function pickMove(player, state, typeOfMove, reportMoveCallback) {
 }
 
 function makeMove(state, move) {
-	var state = copyState(state);
+	state = copyState(state);
 	
 	var moveType = move.t;
 	if (moveType == MOVE_ARMY) {
