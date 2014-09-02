@@ -261,11 +261,13 @@ function prepareDisplay(container, gameState) {
 
 	var defs = elem('defs', {}, 		
 		makeGradient('b', '#88f', '#113') +
-		makeGradient('l', '#fc9', '#530') + 	
+		makeGradient('l', '#fc9', '#530') +
+        makeGradient('lh', '#fea', '#972') +
 		makeGradient('d', '#210', '#000') +
 		makeGradient('w', '#55f', '#003') +
 		map(gameState.p, function(player, index) {
-			return makeGradient('p' + index, player.l, player.d);
+			return makeGradient('p' + index, player.l, player.d) +
+                   makeGradient('p' + index + 'h', player.h, player.hd);
 		}).join(''));
 
 	var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
@@ -351,6 +353,7 @@ function invokeUICallback(object, type) {
 	return false;
 }
 
+
 function uiPickMoveArmy(player, state, reportMoveCallback) {
 	var cleanState = {
 		b: [
@@ -400,8 +403,15 @@ function uiPickMoveArmy(player, state, reportMoveCallback) {
 
 	function setCleanState() {
 		state.d = deepCopy(cleanState, 3);
+        state.d.h = regionsWithActiveArmies();
 		updateDisplay(state);
 	}
+
+    function regionsWithActiveArmies() {
+        return state.r.filter(function(region) {
+            return (state.o[region.i] == player) && soldierCount(state, region);
+        });
+    }
 }
 
 // ==========================================================
@@ -430,7 +440,12 @@ function updateDisplay(gameState) {
 
 	function updateRegionDisplay(region) {
 		var owner = gameState.o[region.i];
-		region.e.style.fill = 'url(#' + (owner ? 'p' + owner.i : 'l') + ')';		
+        var gradientName = (owner ? 'p' + owner.i : 'l');
+        var highlights = gameState.d && gameState.d.h || [];
+        if (highlights.indexOf(region) >= 0)
+            gradientName += 'h';
+
+		region.e.style.fill = 'url(#' + gradientName + ')';
 	}
 	function updateTempleDisplay(temple) {
 		temple.e.style.background = temple.t.c;
@@ -520,10 +535,10 @@ function preserveAspect() {
 
 function makeInitialState() {
 	var players = [
-		{i:0, n: 'Amber', l: '#ffa', d:'#960'}, 
-		{i:1, n: 'Crimson', l: '#f88', d:'#722'},
-		{i:2, n: 'Lavender', l: '#d9d', d:'#537'},
-		{i:3, n: 'Emerald', l: '#9d9', d:'#262'}
+		{i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#fff', hd:'#a80'},
+		{i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
+		{i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
+		{i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
 	].slice(0, playerCount);
 	var regions = generateMap();
 	var gameState = {
