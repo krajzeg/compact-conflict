@@ -34,7 +34,6 @@ var sin = Math.sin,
 	
 	wnd = window, 
 	doc = document, 
-	$ = doc.querySelector.bind(doc);
 
 	div = elem.bind(0,'div');
 
@@ -59,17 +58,21 @@ function for2d(x1,y1,x2,y2,fn) {
 		map(range(y1,y2), fn.bind(0,x));
 	});
 }
+function $(id) {
+    return doc.querySelector('#' + id);
+}
+
 function elem(tag,attrs,contents) {
 	var expanded = {
 		c: 'class',
 		s: 'style',
 		i: 'id'
 	};
-	var html = "<" + tag + " ";
+	var html = '<' + tag + ' ';
 	for (var attributeName in attrs) {
 		html += (expanded[attributeName] || attributeName) + "='" + attrs[attributeName] + "'";
 	}
-	html += ">" + (contents || '') + "</" + tag + ">";
+	html += '>' + (contents || '') + '</' + tag + '>';
 
 	return html;
 }
@@ -250,13 +253,13 @@ function prepareDisplay(container, gameState) {
 	var regions = gameState.r;
 
 	var defs = elem('defs', {}, 		
-		makeGradient('b', '#88f', "#113") + 
+		makeGradient('b', '#88f', '#113') +
 		makeGradient('l', '#fc9', '#530') + 	
 		makeGradient('d', '#210', '#000') +
 		makeGradient('w', '#55f', '#003') +
 		map(gameState.p, function(player, index) {
 			return makeGradient('p' + index, player.l, player.d);
-		}).join(""));
+		}).join(''));
 
 	var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
 	var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
@@ -269,7 +272,7 @@ function prepareDisplay(container, gameState) {
 	}, defs + ocean + shadows + bottoms + tops);
 
 	map(regions, function(region, index) {
-		region.e = $('#r' + index);
+		region.e = $('r' + index);
 		region.c = projectPoint(centerOfWeight(region.p));
 
 		region.e.onclick = invokeUICallback.bind(0, region, 'c');
@@ -284,7 +287,7 @@ function prepareDisplay(container, gameState) {
 	function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
 		return elem('g', {}, map(regions, function(region, index) {
 			return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, noStroke);
-		}).join(""));
+		}).join(''));
 	}
 
 	function makeTemples() {
@@ -301,8 +304,8 @@ function prepareDisplay(container, gameState) {
 			}, div({i: iid, c: 'i'}));
 
 			container.insertAdjacentHTML('beforeend', templeHTML);
-			temple.e = $('#'+id);
-			temple.i = $('#'+iid);			
+			temple.e = $(''+id);
+			temple.i = $(''+iid);			
 		});
 	}
 
@@ -322,7 +325,7 @@ function prepareDisplay(container, gameState) {
 
 		html += div({c: 'sc', i: 'in'});		
 
-		$("#d").innerHTML = html;
+		$('d').innerHTML = html;
 	}
 }
 
@@ -411,7 +414,7 @@ function updateDisplay(gameState) {
 	forEachProperty(soldierDivsById, function(div, id) {
 		if (soldiersStillAlive.indexOf(parseInt(id)) < 0) {
 			// this is an ex-div - in other words, the soldier it represented is dead
-			$('#m').removeChild(div);
+			$('m').removeChild(div);
 			delete soldierDivsById[id]; // surprisingly, this should be safe to do during iteration - http://stackoverflow.com/a/19564686
 		}
 	});
@@ -437,7 +440,7 @@ function updateDisplay(gameState) {
 				c: 's',
 				s: 'background:' + soldier.t.c
 			});
-			var container = $('#m');
+			var container = $('m');
 			container.insertAdjacentHTML('beforeEnd', html);
 			domElement = soldierDivsById[soldier.i] = container.lastChild;			
 		}
@@ -461,31 +464,31 @@ function updateDisplay(gameState) {
 		var moveState = gameState.m;
 
 		// turn counter
-		$('#tc').innerHTML = "Turn <b>" + gameState.m.t + "</b> / " + turnCount;
+		$('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
 
 		// player activation
 		map(gameState.p, function(player, index) {			
-			$('#pl' + index).className = (index == moveState.p) ? 'pl' : 'pi';
-			$('#pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;';
-			$('#pc' + index).innerHTML = gameState.c[player.i] + '$';
+			$('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi';
+			$('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;';
+			$('pc' + index).innerHTML = gameState.c[player.i] + '$';
 		});
 
 		// move info
 		var info;
 		if (moveState.m == MOVE_ARMY) {
-			info = "Move phase" + div({c: 'ds'}, 'Moves left: ' + moveState.l);
+			info = 'Move phase' + div({c: 'ds'}, 'Moves left: ' + moveState.l);
 		}
-		$('#in').innerHTML = info;
+		$('in').innerHTML = info;
 
 		// buttons
-		$('#u').innerHTML = '';
+		$('u').innerHTML = '';
 		var decisionState = gameState.d;
 		map((decisionState && decisionState.b) || [], function(button, index) {
 			if (button.h) return;
 			var id = 'b' + index;
-			var buttonHTML = elem('a', {href: "#", i: id}, button.t);
-			$('#u').insertAdjacentHTML('beforeend', buttonHTML);
-			$("#" + id).onclick = invokeUICallback.bind(0, index, 'b');	
+			var buttonHTML = elem('a', {href: '#', i: id}, button.t);
+			$('u').insertAdjacentHTML('beforeend', buttonHTML);
+			$(id).onclick = invokeUICallback.bind(0, index, 'b');
 		});
 	}
 }
@@ -498,7 +501,7 @@ function preserveAspect() {
 		h = w / aspect;
 	}
 
-	var styles = $('#c').style;
+	var styles = $('c').style;
 	styles.width = w + px;
 	styles.height = h + px;
 	styles.fontSize = 0.025 * h + px;
@@ -615,12 +618,12 @@ function copyState(state) {
 		r: state.r, 
 		p: state.p,
 		// some others... less so
-		m: deepCopy(state.m, 1), // this will be 1, once the "move state" gets more complex
+		m: deepCopy(state.m, 1), // this will be 1, once the 'move state' gets more complex
 		o: deepCopy(state.o, 1),
 		t: deepCopy(state.t, 2),
 		s: deepCopy(state.s, 3),
 		c: deepCopy(state.c, 1)
-		// and some others are completely omitted - namely 'd', the current "move decision" partial state
+		// and some others are completely omitted - namely 'd', the current 'move decision' partial state
 	};
 }
 
@@ -743,7 +746,7 @@ function regionCount(state, player) {
 // start the game
 !function() {
 	var state = makeInitialState();
-	prepareDisplay($('#m'), state);
+	prepareDisplay($('m'), state);
 	updateDisplay(state);
 	playOneMove(state);
 }();
