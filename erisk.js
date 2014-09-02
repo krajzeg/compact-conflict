@@ -97,6 +97,13 @@ function min(seq, key) {
 	});
 	return smallestElement;
 }
+function sum(seq, key) {
+    var total = 0;
+    map(seq, function(elem){
+        total += key(elem);
+    });
+    return total;
+}
 function pairwise(array, fn) {
 	var result = [];
 	map(array, function(elem1, index) {
@@ -691,7 +698,8 @@ function nextTurn(state) {
 	var player = state.p[state.m.p];
 	
 	// cash is produced
-	state.c[player.i] += regionCount(state, player);
+    console.log(player.n + ' earned ' + income(state,player));
+	state.c[player.i] += income(state, player);
 
 	// temples produce one soldier per turn automatically
 	forEachProperty(state.t, function(temple, regionIndex) {
@@ -725,6 +733,14 @@ function addSoldiers(state, region, element, count) {
 			t: element
 		});
 	});
+}
+
+function income(state, player) {
+    var baseIncome = regionCount(state, player) * 2;
+    var upkeep = sum(state.r, function(region) {
+        return ((state.o[region.i] == player) && (!state.t[region.i])) ? soldierCount(state, region) : 0;
+    });
+    return baseIncome - upkeep;
 }
 
 function regionCount(state, player) {
