@@ -7,7 +7,7 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 22,
 	playerCount = 3,
-	movesPerTurn = 3,
+	movesPerTurn = 1,
 	turnCount = 15;
 
 // ==========================================================
@@ -104,6 +104,10 @@ function min(seq, key) {
 		}
 	});
 	return smallestElement;
+}
+function max(seq, key) {
+    key = key || identity;
+    return min(seq, function(elem) { return -key(elem); })
 }
 
 function sum(seq, key) {
@@ -635,24 +639,49 @@ function makeInitialState() {
 // ==========================================================
 
 function aiPickMove(player, state, reportMoveCallback) {
-    // check all possible moves from here
-    var moves = possibleMoves(player, state);
+    // use a min-max search to find the best move looking a few steps forward
 
-    // iterate over the moves, simulate them, and pick the one that gave the best result
-    var bestMove = min(moves, moveValue);
-    console.log("Best move:", -moveValue(bestMove));
+    var time = new Date().getTime();
+        var bestOption = minimax(player, state, 4);
+    time = (new Date().getTime()) - time;
+    console.log("Thinking took: " + time + " ms")
+    console.log("Best value:", bestOption.v);
 
-    // A.I. takes half a second to do it
-    setTimeout(reportMoveCallback.bind(0, bestMove), 500);
+    // A.I. takes half a second to perform its move
+    setTimeout(reportMoveCallback.bind(0, bestOption.m), 500);
+}
+
+function minimax(povPlayer, state, depth) {
+    // we're at a terminal node!
+    if (depth == 0)
+        return {v: heuristicPositionValueForPlayer(povPlayer, state)};
+
+    // OK, who's playing?
+    var activePlayer = state.p[state.m.p];
+    var moves = possibleMoves(state);
+
+    var bestMove = moves[0], bestValue = moveValue(moves[0]);
+    map(moves.slice(1), function(move) {
+        var value = moveValue(move);
+        if (activePlayer == povPlayer && (value > bestValue)) {
+            // this is a maximizing node, so this move is better
+            bestMove = move; bestValue = value;
+        } else if (activePlayer != povPlayer && (value < bestValue)) {
+            // this is a minimizing node, so this move is better
+            bestMove = move; bestValue = value;
+        }
+    });
+    return {m: bestMove, v: bestValue};
 
     function moveValue(move) {
-        return -heuristicPositionValueForPlayer(player, makeMove(state, move));
+        return minimax(povPlayer, makeMove(state, move), depth-1).v;
     }
 }
 
-function possibleMoves(player, state) {
+function possibleMoves(state) {
     // ending your turn is always an option
     var moves = [{t: END_TURN}];
+    var player = state.p[state.m.p];
 
     // let's see what moves we have available
     map(state.r, function(region) {
