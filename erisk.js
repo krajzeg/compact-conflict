@@ -617,11 +617,16 @@ function aiPickMove(player, state, reportMoveCallback) {
     // check all possible moves from here
     var moves = possibleMoves(player, state);
 
-    // pick a random one
-    var randomMove = moves[rint(0, moves.length)];
+    // iterate over the moves, simulate them, and pick the one that gave the best result
+    var bestMove = min(moves, moveValue);
+    console.log("Best move:", -moveValue(bestMove));
 
     // A.I. takes half a second to do it
-    setTimeout(reportMoveCallback.bind(0, randomMove), 500);
+    setTimeout(reportMoveCallback.bind(0, bestMove), 500);
+
+    function moveValue(move) {
+        return -heuristicPositionValueForPlayer(player, makeMove(state, move));
+    }
 }
 
 function possibleMoves(player, state) {
@@ -645,6 +650,24 @@ function possibleMoves(player, state) {
 
     // return the list
     return moves;
+}
+
+function heuristicPositionValueForPlayer(player, state) {
+    return sum(state.p, function(p) {
+        return heuristicForSinglePlayer(p, state) * ((p == player) ? 1 : -1/(playerCount-1));
+    });
+}
+
+function heuristicForSinglePlayer(player, state) {
+    var total = 0.0;
+    var templeBonus = 5;
+
+    forEachProperty(state.o, function(owner, regionIndex) {
+        if (owner == player)
+            total += state.t[regionIndex] ? templeBonus : 1;
+    });
+
+    return total;
 }
 
 // ==========================================================
@@ -788,7 +811,6 @@ function nextTurn(state) {
 	var player = state.p[state.m.p];
 	
 	// cash is produced
-    console.log(player.n + ' earned ' + income(state,player));
 	state.c[player.i] += income(state, player);
 
 	// temples produce one soldier per turn automatically
