@@ -375,7 +375,7 @@ function uiPickMove(player, state, reportMoveCallback) {
                 state.d.s = region;
                 state.d.c = totalSoldiers;
                 state.d.b[0].h = 0;
-                state.d.h = regionPlusNeighbours(region);
+                state.d.h = region.n.concat(region);
             }
 		} else {
 			// we already have a move in progress
@@ -412,11 +412,6 @@ function uiPickMove(player, state, reportMoveCallback) {
 
     function regionHasActiveArmy(region) {
         return (state.o[region.i] == player) && soldierCount(state, region) && (!contains(state.m.z, region));
-    }
-    function regionPlusNeighbours(region) {
-        return state.r.filter(function(r) {
-            return region == r || contains(region.n, r)
-        });
     }
 }
 
