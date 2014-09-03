@@ -495,11 +495,17 @@ function updateDisplay(gameState) {
 		// turn counter
 		$('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
 
-		// player activation
-		map(gameState.p, function(player, index) {			
-			$('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi';
-			$('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;';
-			$('pc' + index).innerHTML = gameState.c[player.i] + '$';
+		// player data
+		map(gameState.p, function(player, index) {
+			$('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi'; // active or not?
+            var regions = regionCount(gameState, player);
+            if (regions) {
+                $('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;'; // region count
+                $('pc' + index).innerHTML = gameState.c[player.i] + '$'; // cash on hand
+            } else {
+                $('pr' + index).innerHTML = '&#9760;'; // skull and crossbones, you're dead
+                $('pc' + index).innerHTML = '';
+            }
 		});
 
 		// move info
@@ -601,7 +607,7 @@ function makeInitialState() {
 			var bestRegion = min(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
-			putTemple(bestRegion, 3);
+			putTemple(bestRegion, 8);
 			templeRegions.push(bestRegion);
 		});
 	}
@@ -621,6 +627,10 @@ function makeInitialState() {
 var soldierCounter;
 
 function pickMove(player, state, typeOfMove, reportMoveCallback) {
+    // dead players just skip their turns, cause they're DEAD
+    if (!regionCount(state,player))
+        reportMoveCallback({t: END_TURN});
+
 	// for testing
 	uiPickMoveArmy(player, state, reportMoveCallback);
 }
@@ -632,8 +642,11 @@ function makeMove(state, move) {
 	if (moveType == MOVE_ARMY) {
 		moveSoldiers(state, move.s, move.d, move.c);
 	} else if (moveType == END_TURN) {
-		nextTurn(state);
+		state.m.l = 0;
 	}
+
+    // updates that happen after each move (checking for players losing, etc.)
+    afterMoveChecks(state);
 
 	return state;
 }
@@ -670,6 +683,26 @@ function playOneMove(state) {
 
 	// update display with the move in progress
 	updateDisplay(state);
+}
+
+function afterMoveChecks(state) {
+    map(state.p, function(player) {
+        // check for game loss
+        var totalSoldiers = sum(state.r, function(region) {
+            return state.o[region.i] == player ? soldierCount(state, region) : 0;
+        });
+        if (!totalSoldiers && regionCount(state, player)) {
+            // lost!
+            forEachProperty(state.o, function(p, r) {
+                if (player == p)
+                    delete state.o[r];
+            });
+        }
+    });
+
+    // moving to next turn
+    if (!state.m.l)
+        nextTurn(state);
 }
 
 function moveSoldiers(state, fromRegion, toRegion, howMany) {
@@ -719,10 +752,8 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
         }
     }
 
-	// next move
-	var moveState = state.m;
-	if (!--moveState.l)
-		nextTurn(state);
+	// use up the move
+    state.m.l--;
 }
 
 function nextTurn(state) {
