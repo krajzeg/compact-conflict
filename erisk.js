@@ -40,24 +40,29 @@ var sin = Math.sin,
 function rint(low,high) {
 	return Math.floor(low+Math.random()*(high-low));
 }
+
 function range(low,high) {
 	var r = [];
 	for (var i = low; i < high; i++)
 		r.push(i);
 	return r;
 }
+
 function map(seq,fn) {
 	return [].slice.call(seq).map(fn);
 }
+
 function forEachProperty(obj,fn) {
 	for (var property in obj)
 		fn(obj[property], property);
 }
+
 function for2d(x1,y1,x2,y2,fn) {
 	map(range(x1,x2), function(x) {
 		map(range(y1,y2), fn.bind(0,x));
 	});
 }
+
 function $(id) {
     return doc.querySelector('#' + id);
 }
@@ -76,6 +81,7 @@ function elem(tag,attrs,contents) {
 
 	return html;
 }
+
 function deepCopy(obj, depth) {
 	if ((!depth) || (typeof obj != 'object')) return obj;
 
@@ -85,7 +91,9 @@ function deepCopy(obj, depth) {
 	});
 	return copy;
 }
+
 function identity(x) { return x; }
+
 function min(seq, key) {
 	key = key || identity;
 	var smallestValue = key(seq[0]), smallestElement;
@@ -97,6 +105,7 @@ function min(seq, key) {
 	});
 	return smallestElement;
 }
+
 function sum(seq, key) {
     var total = 0;
     map(seq, function(elem){
@@ -104,9 +113,11 @@ function sum(seq, key) {
     });
     return total;
 }
+
 function contains(seq, elem) {
     return seq && (seq.indexOf(elem) >= 0);
 }
+
 function pairwise(array, fn) {
 	var result = [];
 	map(array, function(elem1, index) {
@@ -115,6 +126,16 @@ function pairwise(array, fn) {
 		});
 	});
 	return result;
+}
+
+function shuffle(seq) {
+    map(seq, function(_, index) {
+        var otherIndex = rint(index, seq.length);
+        var t = seq[otherIndex];
+        seq[otherIndex] = seq[index];
+        seq[index] = t;
+    });
+    return seq;
 }
 
 // ==========================================================
@@ -648,7 +669,8 @@ function possibleMoves(player, state) {
        }
     });
 
-    // return the list
+    // return the list, shuffled (so there is no bias due to move generation order)
+    shuffle(moves);
     return moves;
 }
 
@@ -661,10 +683,13 @@ function heuristicPositionValueForPlayer(player, state) {
 function heuristicForSinglePlayer(player, state) {
     var total = 0.0;
     var templeBonus = 5;
+    var soldierBonus = 0.33; // 3 soldiers are worth about one region for now
 
     forEachProperty(state.o, function(owner, regionIndex) {
-        if (owner == player)
+        if (owner == player) {
             total += state.t[regionIndex] ? templeBonus : 1;
+            total += soldierCount(state, state.r[regionIndex]) * soldierBonus;
+        }
     });
 
     return total;
