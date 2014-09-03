@@ -356,8 +356,7 @@ function invokeUICallback(object, type) {
 	return false;
 }
 
-
-function uiPickMoveArmy(player, state, reportMoveCallback) {
+function uiPickMove(player, state, reportMoveCallback) {
 	var cleanState = {
 		b: [
 			{t: 'Cancel move', h:1},
@@ -548,10 +547,10 @@ function preserveAspect() {
 
 function makeInitialState() {
 	var players = [
-		{i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#fff', hd:'#a80'},
-		{i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
-		{i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
-		{i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
+		{i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#fff', hd:'#a80', u: uiPickMove},
+		{i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944', u: aiPickMove},
+		{i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759', u: aiPickMove},
+		{i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484', u: aiPickMove}
 	].slice(0, playerCount);
 	var regions = generateMap();
 	var gameState = {
@@ -607,7 +606,7 @@ function makeInitialState() {
 			var bestRegion = min(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
-			putTemple(bestRegion, 8);
+			putTemple(bestRegion, 3);
 			templeRegions.push(bestRegion);
 		});
 	}
@@ -617,6 +616,15 @@ function makeInitialState() {
 		gameState.t[index] = {r: region, i: index, t: none};
 		addSoldiers(gameState, region, none, soldierCount);
 	}
+}
+
+// ==========================================================
+// The AI running CPU players resides below.
+// ==========================================================
+
+function aiPickMove(player, state, reportMoveCallback) {
+    // A.I. just takes a second to end its turn
+    setTimeout(reportMoveCallback.bind(0, {t: END_TURN}), 1000);
 }
 
 // ==========================================================
@@ -631,8 +639,8 @@ function pickMove(player, state, typeOfMove, reportMoveCallback) {
     if (!regionCount(state,player))
         reportMoveCallback({t: END_TURN});
 
-	// for testing
-	uiPickMoveArmy(player, state, reportMoveCallback);
+	// delegate to whoever handles this player
+    player.u(player, state, reportMoveCallback);
 }
 
 function makeMove(state, move) {
@@ -686,8 +694,8 @@ function playOneMove(state) {
 }
 
 function afterMoveChecks(state) {
+    // check for game loss by any of the players
     map(state.p, function(player) {
-        // check for game loss
         var totalSoldiers = sum(state.r, function(region) {
             return state.o[region.i] == player ? soldierCount(state, region) : 0;
         });
