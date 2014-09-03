@@ -370,7 +370,7 @@ function uiPickMove(player, state, reportMoveCallback) {
 		var totalSoldiers = soldierCount(state, region);
 		if (!state.d.s) {
 			// no move in progress - start a new move if this is legal
-            if (regionHasActiveArmy(region)) {
+            if (regionHasActiveArmy(state, player, region)) {
                 state.d.t = MOVE_ARMY;
                 state.d.s = region;
                 state.d.c = totalSoldiers;
@@ -406,13 +406,9 @@ function uiPickMove(player, state, reportMoveCallback) {
 
 	function setCleanState() {
 		state.d = deepCopy(cleanState, 3);
-        state.d.h = state.r.filter(regionHasActiveArmy);
+        state.d.h = state.r.filter(regionHasActiveArmy.bind(0, state, player));
 		updateDisplay(state);
 	}
-
-    function regionHasActiveArmy(region) {
-        return (state.o[region.i] == player) && soldierCount(state, region) && (!contains(state.m.z, region));
-    }
 }
 
 // ==========================================================
@@ -618,8 +614,37 @@ function makeInitialState() {
 // ==========================================================
 
 function aiPickMove(player, state, reportMoveCallback) {
-    // A.I. just takes a second to end its turn
-    setTimeout(reportMoveCallback.bind(0, {t: END_TURN}), 1000);
+    // check all possible moves from here
+    var moves = possibleMoves(player, state);
+
+    // pick a random one
+    var randomMove = moves[rint(0, moves.length)];
+
+    // A.I. takes half a second to do it
+    setTimeout(reportMoveCallback.bind(0, randomMove), 500);
+}
+
+function possibleMoves(player, state) {
+    // ending your turn is always an option
+    var moves = [{t: END_TURN}];
+
+    // let's see what moves we have available
+    map(state.r, function(region) {
+       if (regionHasActiveArmy(state, player, region)) {
+           // there is a move from here!
+           // iterate over all possible neighbour/soldier count combinations
+           var soldiers = soldierCount(state, region);
+           map(region.n, function(neighbour) {
+               map(range(1,soldiers+1), function(count) {
+                   // move <count> soldiers from <region> to <neighbour>
+                   moves.push({t: MOVE_ARMY, s: region, d: neighbour, c: count});
+               });
+           });
+       }
+    });
+
+    // return the list
+    return moves;
 }
 
 // ==========================================================
@@ -806,6 +831,10 @@ function income(state, player) {
         return ((state.o[region.i] == player) && (!state.t[region.i])) ? soldierCount(state, region) : 0;
     });
     return baseIncome - upkeep;
+}
+
+function regionHasActiveArmy(state, player, region) {
+    return (state.o[region.i] == player) && soldierCount(state, region) && (!contains(state.m.z, region));
 }
 
 function regionCount(state, player) {
