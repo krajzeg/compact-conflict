@@ -730,34 +730,6 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
     }
 }
 
-/*
-function minimax(povPlayer, state, depth) {
-    // we're at a terminal node!
-    if (depth == 0)
-        return {v: heuristicPositionValueForPlayer(povPlayer, state)};
-
-    // OK, who's playing?
-    var activePlayer = state.p[state.m.p];
-    var moves = possibleMoves(state);
-
-    var bestMove = moves[0], bestValue = moveValue(moves[0]);
-    map(moves.slice(1), function(move) {
-        var value = moveValue(move);
-        if (activePlayer == povPlayer && (value > bestValue)) {
-            // this is a maximizing node, so this move is better
-            bestMove = move; bestValue = value;
-        } else if (activePlayer != povPlayer && (value < bestValue)) {
-            // this is a minimizing node, so this move is better
-            bestMove = move; bestValue = value;
-        }
-    });
-    return {m: bestMove, v: bestValue};
-
-    function moveValue(move) {
-        return minimax(povPlayer, makeMove(state, move), depth-1).v;
-    }
-}*/
-
 function possibleMoves(state) {
     // ending your turn is always an option
     var moves = [{t: END_TURN}];
@@ -811,7 +783,7 @@ function heuristicForSinglePlayer(player, state) {
 
 var soldierCounter;
 
-function pickMove(player, state, typeOfMove, reportMoveCallback) {
+function pickMove(player, state, reportMoveCallback) {
     // dead players just skip their turns, cause they're DEAD
     if (!regionCount(state,player))
         return reportMoveCallback({t: END_TURN});
@@ -856,10 +828,9 @@ function copyState(state) {
 
 function playOneMove(state) {
 	var controllingPlayer = state.p[state.m.p]; // whose the active player to make some kind of move?
-	var typeOfMove = state.m.t; // what type of move is needed?
 
 	// let the player pick their move using UI or AI
-	pickMove(controllingPlayer, state, typeOfMove, function(move) {
+	pickMove(controllingPlayer, state, function(move) {
 		// the move is chosen - update state to a new immutable copy
 		var newState = makeMove(state, move);
 		// schedule next move
