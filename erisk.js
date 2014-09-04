@@ -7,7 +7,7 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 22,
 	playerCount = 3,
-	movesPerTurn = 1,
+	movesPerTurn = 3,
 	turnCount = 15;
 
 // ==========================================================
@@ -640,17 +640,90 @@ function makeInitialState() {
 
 function aiPickMove(player, state, reportMoveCallback) {
     // use a min-max search to find the best move looking a few steps forward
-
-    var time = new Date().getTime();
-        var bestOption = minimax(player, state, 4);
-    time = (new Date().getTime()) - time;
-    console.log("Thinking took: " + time + " ms")
-    console.log("Best value:", bestOption.v);
-
-    // A.I. takes half a second to perform its move
-    setTimeout(reportMoveCallback.bind(0, bestOption.m), 500);
+    performMinMax(player, state, 3, reportMoveCallback);
 }
 
+/*
+{
+    depth: ,
+    analyzingOnBehalfOf: ->
+    parent: -> {},
+    state: -> state
+    unconsideredMoves: [...],
+    bestMove: ...,
+    bestValue: 17.2
+}
+*/
+
+function minMaxDoSomeWork(node) {
+    if (node.d == 0) {
+        // terminal node, evaluate and return
+        node.v = heuristicPositionValueForPlayer(node.a, node.s);
+        return minMaxReturnFromChild(node.p, node);
+    }
+
+    var move = node.u.shift();
+    if (!move) {
+        // we're done analyzing here, return value to parent
+        return minMaxReturnFromChild(node.p, node);
+    } else {
+        // spawn a child node
+        var childState = makeMove(node.s, move);
+        return {
+            p: node, a: node.a, d: node.d-1,
+            m: move,
+            s: childState, u: possibleMoves(childState)
+        };
+        // work will resume inside the child
+        return child;
+    }
+}
+
+function minMaxReturnFromChild(node, child) {
+    if (node) {
+        // what sort of a node are we?
+        var activePlayer = node.s.p[node.s.m.p];
+        var maximizingNode = activePlayer == node.a;
+
+        // is the value from child better than what we have?
+        var better = (!node.b) || (maximizingNode && (child.v > node.v)) || ((!maximizingNode) && (child.v < node));
+        if (better) {
+            node.b = child.m;
+            node.v = child.v;
+        }
+    }
+
+    // work will resume in this node on the next iteration
+    return node;
+}
+
+function performMinMax(forPlayer, fromState, depth, moveCallback) {
+    var initialNode = {
+        p: null, a: forPlayer, s: fromState, d: depth,
+        u: possibleMoves(fromState)
+    };
+    var currentNode = initialNode;
+    var unitOfWork = 100;
+
+    setTimeout(doSomeWork, 1);
+
+    function doSomeWork() {
+        var stepsRemaining = unitOfWork;
+        while (stepsRemaining--) {
+            currentNode = minMaxDoSomeWork(currentNode);
+            if (!currentNode) {
+                // we're done, let's see what's the best move we found!
+                moveCallback(initialNode.b);
+                return;
+            }
+        }
+        // schedule some more work, we're not done yet
+        // but we want to let some events happen
+        setTimeout(doSomeWork, 1);
+    }
+}
+
+/*
 function minimax(povPlayer, state, depth) {
     // we're at a terminal node!
     if (depth == 0)
@@ -676,7 +749,7 @@ function minimax(povPlayer, state, depth) {
     function moveValue(move) {
         return minimax(povPlayer, makeMove(state, move), depth-1).v;
     }
-}
+}*/
 
 function possibleMoves(state) {
     // ending your turn is always an option
@@ -765,7 +838,7 @@ function copyState(state) {
 		r: state.r, 
 		p: state.p,
 		// some others... less so
-		m: deepCopy(state.m, 1), // this will be 1, once the 'move state' gets more complex
+		m: deepCopy(state.m, 1),
 		o: deepCopy(state.o, 1),
 		t: deepCopy(state.t, 2),
 		s: deepCopy(state.s, 3),
