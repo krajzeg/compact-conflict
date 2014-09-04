@@ -142,6 +142,10 @@ function shuffle(seq) {
     return seq;
 }
 
+function now() {
+    return Date.now();
+}
+
 // ==========================================================
 // This part of the code deals with procedural map generation
 // prior to gameplay.
@@ -703,7 +707,8 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
         u: possibleMoves(fromState)
     };
     var currentNode = initialNode;
-    var unitOfWork = 100;
+    var unitOfWork = 100, minimumTime = 1000;
+    var timeStart = now();
 
     setTimeout(doSomeWork, 1);
 
@@ -713,7 +718,9 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
             currentNode = minMaxDoSomeWork(currentNode);
             if (!currentNode) {
                 // we're done, let's see what's the best move we found!
-                moveCallback(initialNode.b);
+                // perform the move (after a timeout if the minimal 'thinking time' wasn't reached
+                var elapsedTime = now() - timeStart;
+                setTimeout(moveCallback.bind(0,initialNode.b), -min([elapsedTime - minimumTime, -1]));
                 return;
             }
         }
@@ -807,7 +814,7 @@ var soldierCounter;
 function pickMove(player, state, typeOfMove, reportMoveCallback) {
     // dead players just skip their turns, cause they're DEAD
     if (!regionCount(state,player))
-        reportMoveCallback({t: END_TURN});
+        return reportMoveCallback({t: END_TURN});
 
 	// delegate to whoever handles this player
     player.u(player, state, reportMoveCallback);
