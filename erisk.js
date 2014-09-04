@@ -592,7 +592,7 @@ function makeInitialState() {
 	}
 
 	function distanceScore(regions) {
-		return -min(pairwise(regions, distance));
+		return min(pairwise(regions, distance));
 	}
 
 	function randomRegion() {
@@ -610,7 +610,7 @@ function makeInitialState() {
 		var possibleSetups = map(range(0,1000), function() {
 			return map(range(0, playerCount), randomRegion);
 		});
-		var templeRegions = min(possibleSetups, distanceScore);
+		var templeRegions = max(possibleSetups, distanceScore);
 
 		// we have the regions, set up each player
 		map(players, function(player, index) {
@@ -623,7 +623,7 @@ function makeInitialState() {
 
 		// setup neutral temples
 		map(range(0, playerCount), function() {
-			var bestRegion = min(gameState.r, function(region) {
+			var bestRegion = max(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
 			putTemple(bestRegion, 3);
@@ -720,7 +720,7 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
                 // we're done, let's see what's the best move we found!
                 // perform the move (after a timeout if the minimal 'thinking time' wasn't reached
                 var elapsedTime = now() - timeStart;
-                setTimeout(moveCallback.bind(0,initialNode.b), -min([elapsedTime - minimumTime, -1]));
+                setTimeout(moveCallback.bind(0,initialNode.b), max([minimumTime - elapsedTime, 1]));
                 return;
             }
         }
