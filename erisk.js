@@ -702,8 +702,9 @@ function minMaxReturnFromChild(node, child) {
 }
 
 function performMinMax(forPlayer, fromState, depth, moveCallback) {
+    var simulation = copyState(fromState, forPlayer);
     var initialNode = {
-        p: null, a: forPlayer, s: fromState, d: depth,
+        p: null, a: forPlayer, s: simulation, d: depth,
         u: possibleMoves(fromState)
     };
     var currentNode = initialNode;
@@ -811,11 +812,12 @@ function makeMove(state, move) {
 /**
  * Creates an independent copy of the game state, prior to modifying it.
  **/
-function copyState(state) {	
+function copyState(state, simulatingPlayer) {
 	return {
 		// some things are constant and can be shallowly copied
 		r: state.r, 
 		p: state.p,
+        a: state.a || simulatingPlayer,
 		// some others... less so
 		m: deepCopy(state.m, 1),
 		o: deepCopy(state.o, 1),
@@ -877,10 +879,24 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 			var repeats = min([incomingStrength, defendingStrength]);
 			var attackerWinChance = 100 * (incomingStrength / defendingStrength);
 			var attackerDamage = 0;
-			map(range(0,repeats), function() {
-				if (rint(0, 100 + attackerWinChance) < 100)
+
+			map(range(0,repeats), function(index) {
+				if (randomNumberForFight(index) <= 100)
 					attackerDamage++;
 			});
+
+            function randomNumberForFight(index) {
+                var maximum = 100 + attackerWinChance;
+                if (state.a) {
+                    // simulated fight - return evenly distributed numbers
+                    var number = (index + 1) * maximum / (repeats + 1);
+                    console.log("Simulating: ", incomingStrength, " vs ", defendingStrength, ", ", number, " / ", maximum);
+                    return number;
+                } else {
+                    // not a simulated fight - return a real random number
+                    return rint(0, maximum);
+                }
+            }
 
 			map(range(0,attackerDamage), function() { fromList.shift() });
 			map(range(0,repeats-attackerDamage), function() { toList.shift() });
