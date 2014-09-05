@@ -556,6 +556,18 @@ function updateDisplay(gameState) {
 	}
 }
 
+function showBanner(background, text) {
+    var banner = $('bn'), styles = bn.style;
+
+    styles.background = background;
+    styles.display = 'block';
+    styles.opacity = 1.0;
+    banner.innerHTML = text;
+
+    setTimeout(function() { styles.opacity = 0.0; }, 500);
+    setTimeout(function() { styles.display = 'none'; }, 1500);
+}
+
 function preserveAspect() {
 	var w = wnd.innerWidth, h = wnd.innerHeight, aspect = 1.65, px = 'px';
 	if (w / h > aspect) {
@@ -749,11 +761,11 @@ function possibleMoves(state) {
 
     function addArmyMove(source, dest, count) {
         // add the move to the list, if it doesn't qualify as an obviously stupid one
+
         // suicide moves, for example:
-        if ((owner(state, dest) != player) && (soldierCount(state, dest) > count)) {
-            console.log("Pruning suicide move!")
+        if ((owner(state, dest) != player) && (soldierCount(state, dest) > count))
             return;
-        }
+
         // not *obviously* stupid, add it to the list!
         moves.push({t: MOVE_ARMY, s: source, d: dest, c: count});
     }
@@ -844,7 +856,7 @@ function heuristicForSinglePlayer(player, state, debug) {
 
 function debug(region) {
     var regionOwner = owner(displayedState, region);
-    heuristicForSinglePlayer(regionOwner, displayedState, region);
+    showBanner('#777', "Hiyah!");
     return false;
 }
 
