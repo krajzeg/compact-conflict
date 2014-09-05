@@ -142,6 +142,10 @@ function shuffle(seq) {
     return seq;
 }
 
+function clamp(number, low, high) {
+    return (number < low) ? low : ((number > high) ? high : number);
+}
+
 function now() {
     return Date.now();
 }
@@ -648,8 +652,11 @@ function makeInitialState() {
 // ==========================================================
 
 function aiPickMove(player, state, reportMoveCallback) {
+    // the AI only analyzes its own moves (threats are handled in heuristic)
+    var depth = state.m.l;
+
     // use a min-max search to find the best move looking a few steps forward
-    performMinMax(player, state, 5, reportMoveCallback);
+    performMinMax(player, state, depth, reportMoveCallback);
 }
 
 /*
@@ -693,7 +700,6 @@ function minMaxReturnFromChild(node, child) {
         // what sort of a node are we?
         var activePlayer = node.s.p[node.s.m.p];
         var maximizingNode = activePlayer == node.a;
-
         // is the value from child better than what we have?
         var better = (!node.b) || (maximizingNode && (child.v > node.v)) || ((!maximizingNode) && (child.v < node));
         if (better) {
@@ -762,9 +768,7 @@ function possibleMoves(state) {
 }
 
 function heuristicPositionValueForPlayer(player, state) {
-    return sum(state.p, function(p) {
-        return heuristicForSinglePlayer(p, state) * ((p == player) ? 1 : -1/(playerCount-1));
-    });
+    return heuristicForSinglePlayer(player, state);
 }
 
 function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
@@ -774,43 +778,62 @@ function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
     return (startOfGameValue + (endOfGameValue - startOfGameValue) * alpha);
 }
 
-function heuristicForSinglePlayer(player, state) {
-    var templeBonus = slidingBonus(state, 5, 0, 1),
+function heuristicForSinglePlayer(player, state, debug) {
+    var templeBonus = slidingBonus(state, 8, 0, 1),
         soldierBonus = slidingBonus(state, 0.33, 0, 10);
 
-    function regionValue(region) {
+    function regionFullValue(region) {
         return 1 +
-            (state.t[region.i] ? templeBonus : 0) +
-            soldierCount(state, region) * soldierBonus
+            (state.t[region.i] ? templeBonus : 0);
     }
 
     function regionThreat(region) {
-        // returns the number of enemy soldiers threatening the region
         var ourPresence = soldierCount(state, region);
         var enemyPresence = sum(region.n, function(neighbour) {
             var owner = state.o[neighbour.i];
             return (owner && (owner != player)) ? soldierCount(state, neighbour) : 0;
         });
-        return max([min([(enemyPresence / (ourPresence+0.0001) - 1) * 0.75, 1.5]), 0]);
+        return clamp((enemyPresence / (ourPresence+0.0001) - 1) * 0.5, 0, 0.75);
     }
 
-    var total = 0.0;
-    forEachProperty(state.o, function(owner, regionIndex) {
-        if (owner == player) {
-            var region = state.r[regionIndex];
-            // count the value of the region itself
-            var value = regionValue(region);
-            // but reduce it by the threat other players pose to it (or increase by our threat to them)
-            total += (1.0 - regionThreat(region)) * value;
-        }
-    });
+    function regionOpportunity(region) {
+        // how much conquest does this region enable?
+        var attackingSoldiers = soldierCount(state, region);
+        if (!attackingSoldiers)
+            return 0;
 
-    return total;
+        return sum(region.n, function(neighbour) {
+            if (state.o[neighbour.i] != player) {
+                var defendingSoldiers = soldierCount(state, neighbour);
+                return clamp((attackingSoldiers / (defendingSoldiers + 0.01) - 0.9) * regionFullValue(neighbour) * 0.5, 0, 0.5);
+            } else {
+                return 0;
+            }
+        });
+    }
+
+    function adjustedRegionValue(region) {
+        // count the value of the region itself
+        var value = regionFullValue(region);
+        // but reduce it by the threat other players pose to it (or increase by our threat to them)
+        return (1.0 - regionThreat(region)) * value +
+            regionOpportunity(region) +
+            soldierCount(state, region) * soldierBonus
+    }
+
+    if (debug) {
+        console.log("Opportunity value:", regionOpportunity(debug));
+        console.log("Adjusted RV: ", adjustedRegionValue(debug));
+    }
+
+    return sum(state.r, function (region) {
+        return (state.o[region.i] == player) ? adjustedRegionValue(region) : 0;
+    });
 }
 
 function debug(region) {
     var owner = displayedState.o[region.i];
-    console.log("Heuristic: ", heuristicForSinglePlayer(owner, displayedState));
+    heuristicForSinglePlayer(owner, displayedState, region);
     return false;
 }
 
@@ -914,19 +937,21 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 		
 		if (defendingStrength) {
 			var repeats = min([incomingStrength, defendingStrength]);
-			var attackerWinChance = 100 * (incomingStrength / defendingStrength);
+			var attackerWinChance = 100 * Math.pow(incomingStrength / defendingStrength, 1.6);
 			var attackerDamage = 0;
 
 			map(range(0,repeats), function(index) {
-				if (randomNumberForFight(index) <= 100)
+				if (randomNumberForFight(index) <= 120)
 					attackerDamage++;
 			});
 
             function randomNumberForFight(index) {
-                var maximum = 100 + attackerWinChance;
+                var maximum = 120 + attackerWinChance;
                 if (state.a) {
-                    // simulated fight - return evenly distributed numbers
-                    return (index + 1) * maximum / (repeats + 1);
+                    // simulated fight - return some numbers
+                    // they're clustered about the center of the range to
+                    // make the AI more "decisive" (this exaggerates any advantages)
+                    return (index + 3) * maximum / (repeats + 5);
                 } else {
                     // not a simulated fight - return a real random number
                     return rint(0, maximum);
