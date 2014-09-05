@@ -564,8 +564,8 @@ function showBanner(background, text) {
     styles.opacity = 1.0;
     banner.innerHTML = text;
 
-    setTimeout(function() { styles.opacity = 0.0; }, 500);
-    setTimeout(function() { styles.display = 'none'; }, 1500);
+    setTimeout(function() { styles.opacity = 0.0; }, 800);
+    setTimeout(function() { styles.display = 'none'; }, 1800);
 }
 
 function preserveAspect() {
@@ -639,7 +639,7 @@ function makeInitialState() {
 			// make one of the regions your own
 			gameState.o[region.i] = player;
 			// put a temple and 3 soldiers in it
-			putTemple(region, 3);
+			putTemple(region, 1);
 		});
 
 		// setup neutral temples
@@ -647,7 +647,7 @@ function makeInitialState() {
 			var bestRegion = max(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
-			putTemple(bestRegion, 3);
+			putTemple(bestRegion, 7);
 			templeRegions.push(bestRegion);
 		});
 	}
@@ -936,6 +936,8 @@ function afterMoveChecks(state) {
                 if (player == p)
                     delete state.o[r];
             });
+            if (!state.a)
+                showBanner('#222', player.n + " has been eliminated!");
         }
     });
 
@@ -1042,7 +1044,11 @@ function nextTurn(state) {
 	// next turn, next player!
 	var nextPlayer = (player.i + 1) % playerCount;
 	var turnNumber = state.m.t + (nextPlayer ? 0 : 1); 
-	state.m = {t: turnNumber, p: nextPlayer, m: MOVE_ARMY, l: movesPerTurn};	
+	state.m = {t: turnNumber, p: nextPlayer, m: MOVE_ARMY, l: movesPerTurn};
+
+    // if this is not simulated, we'd like a banner
+    if (!state.a)
+        showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");
 }
 
 // ==========================================================
