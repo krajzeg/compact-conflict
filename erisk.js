@@ -446,6 +446,32 @@ function uiPickMove(player, state, reportMoveCallback) {
 }
 
 // ==========================================================
+// This part of the code helps organize game flow so things are displayed
+// in order taking animation into account.
+// ==========================================================
+
+var oaatQueue = [];
+function oneAtATime(duration, fn) {
+    oaatQueue.push({d: duration, f: fn});
+    if (oaatQueue.length == 1)
+        runOneTask();
+
+    function runOneTask() {
+        // start the first scheduled task
+        var task = oaatQueue[0];
+        task.f();
+        // and wait for it to expire
+        setTimeout(function() {
+            // task done, remove from queue
+            oaatQueue.shift();
+            // is there something more to do?
+            if (oaatQueue.length)
+                runOneTask();
+        }, task.d);
+    }
+}
+
+// ==========================================================
 // This part of the code deals with updating the display to
 // match the current game state.
 // ==========================================================
@@ -557,15 +583,17 @@ function updateDisplay(gameState) {
 }
 
 function showBanner(background, text) {
-    var banner = $('bn'), styles = bn.style;
+    oneAtATime(1850, function() {
+        var banner = $('bn'), styles = banner.style;
 
-    styles.background = background;
-    styles.display = 'block';
-    styles.opacity = 1.0;
-    banner.innerHTML = text;
+        styles.background = background;
+        styles.display = 'block';
+        styles.opacity = 1.0;
+        banner.innerHTML = text;
 
-    setTimeout(function() { styles.opacity = 0.0; }, 800);
-    setTimeout(function() { styles.display = 'none'; }, 1800);
+        setTimeout(function() { styles.opacity = 0.0; }, 800);
+        setTimeout(function() { styles.display = 'none'; }, 1800);
+    });
 }
 
 function preserveAspect() {
@@ -910,18 +938,21 @@ function copyState(state, simulatingPlayer) {
 }
 
 function playOneMove(state) {
-	var controllingPlayer = activePlayer(state); // who is the active player to make some kind of move?
+    // oneAtATime is used to ensure that all animations from previous moves complete before a new one is played
+    oneAtATime(150, function() {
+        var controllingPlayer = activePlayer(state); // who is the active player to make some kind of move?
 
-	// let the player pick their move using UI or AI
-	pickMove(controllingPlayer, state, function(move) {
-		// the move is chosen - update state to a new immutable copy
-		var newState = makeMove(state, move);
-		// schedule next move
-		setTimeout(playOneMove.bind(0, newState), 1);
-	});
+        // let the player pick their move using UI or AI
+        pickMove(controllingPlayer, state, function(move) {
+            // the move is chosen - update state to a new immutable copy
+            var newState = makeMove(state, move);
+            // schedule next move
+            setTimeout(playOneMove.bind(0, newState), 1);
+        });
 
-	// update display with the move in progress
-	updateDisplay(state);
+        // update display with the move in progress
+        updateDisplay(state);
+    });
 }
 
 function afterMoveChecks(state) {
@@ -936,8 +967,14 @@ function afterMoveChecks(state) {
                 if (player == p)
                     delete state.o[r];
             });
-            if (!state.a)
+            // show the world the good (or bad) news
+            if (!state.a) {
+                oneAtATime(250, updateDisplay.bind(0, state));
                 showBanner('#222', player.n + " has been eliminated!");
+            }
+            // dead people get no more moves
+            if (activePlayer(state) == player)
+                state.m.l = 0;
         }
     });
 
@@ -1041,14 +1078,18 @@ function nextTurn(state) {
 		}
 	});
 
-	// next turn, next player!
-	var nextPlayer = (player.i + 1) % playerCount;
-	var turnNumber = state.m.t + (nextPlayer ? 0 : 1); 
-	state.m = {t: turnNumber, p: nextPlayer, m: MOVE_ARMY, l: movesPerTurn};
+	// go to next player (skipping dead ones)
+    do {
+        var nextPlayer = (state.m.p + 1) % playerCount;
+        var turnNumber = state.m.t + (nextPlayer ? 0 : 1);
+        state.m = {t: turnNumber, p: nextPlayer, m: MOVE_ARMY, l: movesPerTurn};
+    } while (!regionCount(state, activePlayer(state)));
 
     // if this is not simulated, we'd like a banner
-    if (!state.a)
+    if (!state.a) {
+        oneAtATime(500, updateDisplay.bind(0, state));
         showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");
+    }
 }
 
 // ==========================================================
