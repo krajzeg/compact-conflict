@@ -474,8 +474,8 @@ function updateDisplay(gameState) {
 	updateUI();
 
 	function updateRegionDisplay(region) {
-		var owner = gameState.o[region.i];
-        var gradientName = (owner ? 'p' + owner.i : 'l');
+		var regionOwner = owner(gameState, region);
+        var gradientName = (regionOwner ? 'p' + regionOwner.i : 'l');
         var highlights = gameState.d && gameState.d.h || [];
         if (highlights.indexOf(region) >= 0)
             gradientName += 'h';
@@ -745,7 +745,7 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
 function possibleMoves(state) {
     // ending your turn is always an option
     var moves = [{t: END_TURN}];
-    var player = state.p[state.m.p];
+    var player = activePlayer(state);
 
     // let's see what moves we have available
     map(state.r, function(region) {
@@ -790,8 +790,8 @@ function heuristicForSinglePlayer(player, state, debug) {
     function regionThreat(region) {
         var ourPresence = soldierCount(state, region);
         var enemyPresence = sum(region.n, function(neighbour) {
-            var owner = state.o[neighbour.i];
-            return (owner && (owner != player)) ? soldierCount(state, neighbour) : 0;
+            var nOwner = owner(state, neighbour);
+            return (nOwner && (nOwner != player)) ? soldierCount(state, neighbour) : 0;
         });
         return clamp((enemyPresence / (ourPresence+0.0001) - 1) * 0.5, 0, 0.75);
     }
@@ -803,7 +803,7 @@ function heuristicForSinglePlayer(player, state, debug) {
             return 0;
 
         return sum(region.n, function(neighbour) {
-            if (state.o[neighbour.i] != player) {
+            if (owner(state, neighbour) != player) {
                 var defendingSoldiers = soldierCount(state, neighbour);
                 return clamp((attackingSoldiers / (defendingSoldiers + 0.01) - 0.9) * regionFullValue(neighbour) * 0.5, 0, 0.5);
             } else {
@@ -827,13 +827,13 @@ function heuristicForSinglePlayer(player, state, debug) {
     }
 
     return sum(state.r, function (region) {
-        return (state.o[region.i] == player) ? adjustedRegionValue(region) : 0;
+        return (owner(state, region) == player) ? adjustedRegionValue(region) : 0;
     });
 }
 
 function debug(region) {
-    var owner = displayedState.o[region.i];
-    heuristicForSinglePlayer(owner, displayedState, region);
+    var regionOwner = owner(displayedState, region);
+    heuristicForSinglePlayer(regionOwner, displayedState, region);
     return false;
 }
 
@@ -841,8 +841,6 @@ function debug(region) {
 // All the game logic and the machinery that runs its main
 // loop reside below.
 // ==========================================================
-
-var soldierCounter;
 
 function pickMove(player, state, reportMoveCallback) {
     // dead players just skip their turns, cause they're DEAD
@@ -889,7 +887,7 @@ function copyState(state, simulatingPlayer) {
 }
 
 function playOneMove(state) {
-	var controllingPlayer = state.p[state.m.p]; // whose the active player to make some kind of move?
+	var controllingPlayer = activePlayer(state); // who is the active player to make some kind of move?
 
 	// let the player pick their move using UI or AI
 	pickMove(controllingPlayer, state, function(move) {
@@ -907,7 +905,7 @@ function afterMoveChecks(state) {
     // check for game loss by any of the players
     map(state.p, function(player) {
         var totalSoldiers = sum(state.r, function(region) {
-            return state.o[region.i] == player ? soldierCount(state, region) : 0;
+            return owner(state, region) == player ? soldierCount(state, region) : 0;
         });
         if (!totalSoldiers && regionCount(state, player)) {
             // lost!
@@ -926,8 +924,8 @@ function afterMoveChecks(state) {
 function moveSoldiers(state, fromRegion, toRegion, howMany) {
 	var fromList = state.s[fromRegion.i];
 	var toList = state.s[toRegion.i] || (state.s[toRegion.i] = []);
-	var fromOwner = state.o[fromRegion.i];
-	var toOwner = state.o[toRegion.i];
+	var fromOwner = owner(state, fromRegion);
+	var toOwner = owner(state, toRegion);
 
 	// do we have a fight?
 	if (fromOwner != toOwner) {
@@ -989,7 +987,7 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 }
 
 function nextTurn(state) {
-	var player = state.p[state.m.p];
+	var player = activePlayer(state);
 	
 	// cash is produced
 	state.c[player.i] += income(state, player);
@@ -1008,11 +1006,17 @@ function nextTurn(state) {
 	state.m = {t: turnNumber, p: nextPlayer, m: MOVE_ARMY, l: movesPerTurn};	
 }
 
+// ==========================================================
+// Various simple helpers for working with the game state.
+// ==========================================================
+
 function soldierCount(state, region) {
 	var list = state.s[region.i];
 	return list ? list.length : 0;
 }
 
+
+var soldierCounter;
 function addSoldiers(state, region, element, count) {
 	map(range(0,count), function() {
 		soldierCounter = (soldierCounter + 1) || 0;
@@ -1031,22 +1035,30 @@ function addSoldiers(state, region, element, count) {
 function income(state, player) {
     var baseIncome = regionCount(state, player) * 2;
     var upkeep = sum(state.r, function(region) {
-        return ((state.o[region.i] == player) && (!state.t[region.i])) ? soldierCount(state, region) : 0;
+        return ((owner(state, region) == player) && (!state.t[region.i])) ? soldierCount(state, region) : 0;
     });
     return baseIncome - upkeep;
 }
 
 function regionHasActiveArmy(state, player, region) {
-    return (state.o[region.i] == player) && soldierCount(state, region) && (!contains(state.m.z, region));
+    return (owner(state, region) == player) && soldierCount(state, region) && (!contains(state.m.z, region));
 }
 
 function regionCount(state, player) {
 	var total = 0;
 	map(state.r, function(region) {
-		if (state.o[region.i] == player)
+		if (owner(state, region) == player)
 			total++;
 	});
 	return total;
+}
+
+function activePlayer(state) {
+    return state.p[state.m.p];
+}
+
+function owner(state, region) {
+    return state.o[region.i];
 }
 
 // ==========================================================
