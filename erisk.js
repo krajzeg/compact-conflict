@@ -747,6 +747,17 @@ function possibleMoves(state) {
     var moves = [{t: END_TURN}];
     var player = activePlayer(state);
 
+    function addArmyMove(source, dest, count) {
+        // add the move to the list, if it doesn't qualify as an obviously stupid one
+        // suicide moves, for example:
+        if ((owner(state, dest) != player) && (soldierCount(state, dest) > count)) {
+            console.log("Pruning suicide move!")
+            return;
+        }
+        // not *obviously* stupid, add it to the list!
+        moves.push({t: MOVE_ARMY, s: source, d: dest, c: count});
+    }
+
     // let's see what moves we have available
     map(state.r, function(region) {
        if (regionHasActiveArmy(state, player, region)) {
@@ -755,9 +766,9 @@ function possibleMoves(state) {
            // moving the entire army there, and half of it
            var soldiers = soldierCount(state, region);
            map(region.n, function(neighbour) {
-               moves.push({t: MOVE_ARMY, s: region, d: neighbour, c: soldiers});
+               addArmyMove(region, neighbour, soldiers);
                if (soldiers > 1)
-                   moves.push({t: MOVE_ARMY, s: region, d: neighbour, c: Math.floor(soldiers/2)});
+                   addArmyMove(region, neighbour, Math.floor(soldiers / 2));
            });
        }
     });
@@ -921,6 +932,22 @@ function afterMoveChecks(state) {
         nextTurn(state);
 }
 
+var soldierCounter;
+function addSoldiers(state, region, element, count) {
+    map(range(0,count), function() {
+        soldierCounter = (soldierCounter + 1) || 0;
+
+        var soldierList = state.s[region.i];
+        if (!soldierList)
+            soldierList = state.s[region.i] = [];
+
+        soldierList.push({
+            i: soldierCounter++,
+            t: element
+        });
+    });
+}
+
 function moveSoldiers(state, fromRegion, toRegion, howMany) {
 	var fromList = state.s[fromRegion.i];
 	var toList = state.s[toRegion.i] || (state.s[toRegion.i] = []);
@@ -1013,23 +1040,6 @@ function nextTurn(state) {
 function soldierCount(state, region) {
 	var list = state.s[region.i];
 	return list ? list.length : 0;
-}
-
-
-var soldierCounter;
-function addSoldiers(state, region, element, count) {
-	map(range(0,count), function() {
-		soldierCounter = (soldierCounter + 1) || 0;
-
-		var soldierList = state.s[region.i];
-		if (!soldierList)
-			soldierList = state.s[region.i] = [];
-
-		soldierList.push({
-			i: soldierCounter++,
-			t: element
-		});
-	});
 }
 
 function income(state, player) {
