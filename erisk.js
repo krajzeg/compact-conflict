@@ -667,7 +667,7 @@ function makeInitialState() {
 			// make one of the regions your own
 			gameState.o[region.i] = player;
 			// put a temple and 3 soldiers in it
-			putTemple(region, 1);
+			putTemple(region, 3);
 		});
 
 		// setup neutral temples
@@ -675,7 +675,7 @@ function makeInitialState() {
 			var bestRegion = max(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
-			putTemple(bestRegion, 7);
+			putTemple(bestRegion, 3);
 			templeRegions.push(bestRegion);
 		});
 	}
