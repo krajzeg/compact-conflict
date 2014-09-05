@@ -317,9 +317,10 @@ function prepareDisplay(container, gameState) {
 		region.c = projectPoint(centerOfWeight(region.p));
 
 		region.e.onclick = invokeUICallback.bind(0, region, 'c');
-		region.e.ondblclick = invokeUICallback.bind(0, region, 'd');
 		region.e.onmouseover = invokeUICallback.bind(0, region, 'i');
 		region.e.onmouseout = invokeUICallback.bind(0, region, 'o');
+
+        region.e.oncontextmenu = debug.bind(0, region);
 	});
 
 	makeTemples();
@@ -446,7 +447,11 @@ function uiPickMove(player, state, reportMoveCallback) {
 // ==========================================================
 
 var soldierDivsById = {};
+var displayedState;
 function updateDisplay(gameState) {
+    // just for debugging
+    displayedState = gameState;
+
 	map(gameState.r, updateRegionDisplay);
 	forEachProperty(gameState.t, updateTempleDisplay);
 
@@ -644,7 +649,7 @@ function makeInitialState() {
 
 function aiPickMove(player, state, reportMoveCallback) {
     // use a min-max search to find the best move looking a few steps forward
-    performMinMax(player, state, 3, reportMoveCallback);
+    performMinMax(player, state, 5, reportMoveCallback);
 }
 
 /*
@@ -740,13 +745,13 @@ function possibleMoves(state) {
     map(state.r, function(region) {
        if (regionHasActiveArmy(state, player, region)) {
            // there is a move from here!
-           // iterate over all possible neighbour/soldier count combinations
+           // iterate over all possible neighbours, and add two moves for each:
+           // moving the entire army there, and half of it
            var soldiers = soldierCount(state, region);
            map(region.n, function(neighbour) {
-               map(range(1,soldiers+1), function(count) {
-                   // move <count> soldiers from <region> to <neighbour>
-                   moves.push({t: MOVE_ARMY, s: region, d: neighbour, c: count});
-               });
+               moves.push({t: MOVE_ARMY, s: region, d: neighbour, c: soldiers});
+               if (soldiers > 1)
+                   moves.push({t: MOVE_ARMY, s: region, d: neighbour, c: Math.floor(soldiers/2)});
            });
        }
     });
@@ -762,19 +767,51 @@ function heuristicPositionValueForPlayer(player, state) {
     });
 }
 
-function heuristicForSinglePlayer(player, state) {
-    var total = 0.0;
-    var templeBonus = 5;
-    var soldierBonus = 0.33; // 3 soldiers are worth about one region for now
+function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
+    var alpha = (state.m.t - dropOffTurn) / (turnCount - dropOffTurn);
+    if (alpha < 0.0)
+        alpha = 0.0;
+    return (startOfGameValue + (endOfGameValue - startOfGameValue) * alpha);
+}
 
+function heuristicForSinglePlayer(player, state) {
+    var templeBonus = slidingBonus(state, 5, 0, 1),
+        soldierBonus = slidingBonus(state, 0.33, 0, 10);
+
+    function regionValue(region) {
+        return 1 +
+            (state.t[region.i] ? templeBonus : 0) +
+            soldierCount(state, region) * soldierBonus
+    }
+
+    function regionThreat(region) {
+        // returns the number of enemy soldiers threatening the region
+        var ourPresence = soldierCount(state, region);
+        var enemyPresence = sum(region.n, function(neighbour) {
+            var owner = state.o[neighbour.i];
+            return (owner && (owner != player)) ? soldierCount(state, neighbour) : 0;
+        });
+        return max([min([(enemyPresence / (ourPresence+0.0001) - 1) * 0.75, 1.5]), 0]);
+    }
+
+    var total = 0.0;
     forEachProperty(state.o, function(owner, regionIndex) {
         if (owner == player) {
-            total += state.t[regionIndex] ? templeBonus : 1;
-            total += soldierCount(state, state.r[regionIndex]) * soldierBonus;
+            var region = state.r[regionIndex];
+            // count the value of the region itself
+            var value = regionValue(region);
+            // but reduce it by the threat other players pose to it (or increase by our threat to them)
+            total += (1.0 - regionThreat(region)) * value;
         }
     });
 
     return total;
+}
+
+function debug(region) {
+    var owner = displayedState.o[region.i];
+    console.log("Heuristic: ", heuristicForSinglePlayer(owner, displayedState));
+    return false;
 }
 
 // ==========================================================
@@ -889,9 +926,7 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
                 var maximum = 100 + attackerWinChance;
                 if (state.a) {
                     // simulated fight - return evenly distributed numbers
-                    var number = (index + 1) * maximum / (repeats + 1);
-                    console.log("Simulating: ", incomingStrength, " vs ", defendingStrength, ", ", number, " / ", maximum);
-                    return number;
+                    return (index + 1) * maximum / (repeats + 1);
                 } else {
                     // not a simulated fight - return a real random number
                     return rint(0, maximum);
