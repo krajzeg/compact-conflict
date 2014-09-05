@@ -59,11 +59,7 @@
 			border-color: #fff;
 		}
 
-		.o,.i,.s,a,.pl,.pi {
-			transition: 0.15s all ease-in-out;
-		}
-
-		/* Information display styles */		
+		/* Information display styles */
 
 		.sc { 
 			margin: 2px 2px; 
@@ -108,11 +104,45 @@
 			color: #fff;
 		}
 
-	</style>
+        #bn {
+            position: absolute;
+            top: 40%;
+            bottom: 48%;
+            width: 96%;
+
+            text-align: center;
+            padding-top: 0.6%;
+            padding-right: 10%;
+
+            border: 2px solid black;
+
+            color: white;
+            background: #520;
+            z-index: 100;
+            font-size: 3em;
+            font-family: "Constantia", serif;
+
+            transform: translate3d(1.5em,0,0) rotateY(15deg);
+            box-shadow: 0 10px 10px 5px rgba(0,0,0,0.7), inset 0 20px 2px rgba(255,255,255,0.05);
+            text-shadow: 2px 2px #000;
+
+            opacity: 0.0;
+
+            transition: all 0.5s ease-in-out;
+        }
+        .sh {
+            opacity: 1.0;
+        }
+        a,.o,.i,.s,.pl,.pi {
+            transition: all 0.15s ease-in-out;
+        }
+
+    </style>
 </head>
 <body>
 <div id='c'>
 	<div id='o'><div id='d'></div><div id='u'></div></div>
 	<div id='m'></div>
+    <div id='bn'></div>
 </div>
 <script src="erisk.js"></script>
