@@ -422,7 +422,7 @@ function uiPickMove(player, state, reportMoveCallback) {
 				// one of the neighbours - let's finalize the move
 				uiCallbacks = {};
 				decisionState.d = region;
-				reportMoveCallback(decisionState);
+				return reportMoveCallback(decisionState);
 			}
 		}
 		updateDisplay(state);
@@ -617,8 +617,8 @@ function preserveAspect() {
 function makeInitialState() {
 	var players = [
 		{i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#fff', hd:'#a80', u: uiPickMove},
-		{i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944', u: aiPickMove},
-		{i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759', u: aiPickMove},
+		{i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944', u: uiPickMove},
+		{i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759', u: uiPickMove},
 		{i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484', u: aiPickMove}
 	].slice(0, playerCount);
 	var regions = generateMap();
@@ -950,7 +950,7 @@ function playOneMove(state) {
             setTimeout(playOneMove.bind(0, newState), 1);
         });
 
-        // update display with the move in progress
+        // update display before the move happens
         updateDisplay(state);
     });
 }
@@ -967,14 +967,14 @@ function afterMoveChecks(state) {
                 if (player == p)
                     delete state.o[r];
             });
-            // show the world the good (or bad) news
-            if (!state.a) {
-                oneAtATime(250, updateDisplay.bind(0, state));
-                showBanner('#222', player.n + " has been eliminated!");
-            }
             // dead people get no more moves
             if (activePlayer(state) == player)
                 state.m.l = 0;
+            // show the world the good (or bad) news
+            if (!state.a) {
+                oneAtATime(150, updateDisplay.bind(0, state));
+                showBanner('#222', player.n + " has been eliminated!");
+            }
         }
     });
 
@@ -1087,7 +1087,7 @@ function nextTurn(state) {
 
     // if this is not simulated, we'd like a banner
     if (!state.a) {
-        oneAtATime(500, updateDisplay.bind(0, state));
+        oneAtATime(1000, updateDisplay.bind(0, state));
         showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");
     }
 }
