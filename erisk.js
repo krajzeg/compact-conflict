@@ -20,7 +20,7 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 // === Possible temple upgrades
 var UPGRADES = [
     {n: "Soldier", d: "", c: range(10,100), x: []},
-    {n: "X of Water", d: "Region income X% higher.",
+    {n: "X of Water", d: "All region income X% higher.",
         c: [15, 30, 45], x: [33, 66, 100],
         b: '#77f'},
     {n: "X of Earth", d: "Army X% better at defense.",
@@ -32,8 +32,9 @@ var UPGRADES = [
     {n: "X of Air",   d: "X additional move(s) per turn.",
         c: [40, 80], x: [1,2],
         b: '#fff'}
-];
-var LEVELS = ["Temple", "Cathedral", "House"];
+    ],
+    LEVELS = ["Temple", "Cathedral", "House"],
+    SOLDIER = UPGRADES[0], WATER = UPGRADES[1], EARTH = UPGRADES[2], FIRE = UPGRADES[3], AIR = UPGRADES[4];
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -368,7 +369,7 @@ function prepareDisplay(container, gameState) {
             // retrieve elements and bind callbacks
 			temple.e = $(''+id);
 			temple.i = $(''+iid);
-            temple.e.onclick = invokeUICallback.bind(0, temple, 't');
+            temple.e.onclick = invokeUICallback.bind(0, temple.r, 't');
 		});
 	}
 
@@ -445,8 +446,8 @@ function uiPickMove(player, state, reportMoveCallback) {
 		updateDisplay(state);
 	};
 
-    uiCallbacks.t = function(temple) {
-        var region = temple.r;
+    uiCallbacks.t = function(region) {
+        var temple = state.t[region.i];
         if (owner(state,region) == player) {
             state.d = {
                 t: BUILD_ACTION,
@@ -458,14 +459,26 @@ function uiPickMove(player, state, reportMoveCallback) {
     };
 
 	uiCallbacks.b = function(which) {
-		if (which == 1) {
-			// end turn
-			uiCallbacks = {};
-			reportMoveCallback({t: END_TURN});
-		} else {
-			// cancel move
-			setCleanState();
-		}
+        if (state.d && state.d.t == BUILD_ACTION) {
+            // build buttons handled here
+            if (which >= UPGRADES.length) {
+                setCleanState();
+            } else {
+                // build an upgrade!
+                state.d.u = UPGRADES[which];
+                reportMoveCallback(state.d);
+            }
+        } else {
+            // move action buttons handled here
+            if (which == 1) {
+                // end turn
+                uiCallbacks = {};
+                reportMoveCallback({t: END_TURN});
+            } else {
+                // cancel move
+                setCleanState();
+            }
+        }
 	};
 
 	function setCleanState() {
@@ -476,7 +489,8 @@ function uiPickMove(player, state, reportMoveCallback) {
 
     function makeUpgradeButtons(temple) {
         var upgradeButtons = map(UPGRADES, function(upgrade) {
-            var level = 0;
+            var level = (temple.u == upgrade) ? (temple.l+1) : 0;
+            console.log(temple, upgrade.n, level);
             var cost = upgrade.c[level];
             var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "$)");
             var description = template(upgrade.d, upgrade.x[level]);
@@ -627,7 +641,8 @@ function updateDisplay(gameState) {
 
 			var buttonHTML = elem('a', {href: '#', i: id, c: button.o ? 'off' : ''}, buttonContents);
 			$('u').insertAdjacentHTML('beforeend', buttonHTML);
-			$(id).onclick = invokeUICallback.bind(0, index, 'b');
+            if (!button.o)
+			    $(id).onclick = invokeUICallback.bind(0, index, 'b');
 		});
 	}
 }
@@ -701,7 +716,7 @@ function makeInitialState() {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = 15;
+			gameState.c[index] = 60;
 		});
 
 		// pick three regions that are as far away as possible from each other
@@ -933,8 +948,9 @@ function heuristicForSinglePlayer(player, state, debug) {
 }
 
 function debug(region) {
-    var regionOwner = owner(displayedState, region);
-    showBanner('#777', "Hiyah!");
+    var temple = displayedState.t[region.i];
+    if (temple)
+        console.log(temple);
     return false;
 }
 
@@ -957,7 +973,10 @@ function makeMove(state, move) {
 	
 	var moveType = move.t;
 	if (moveType == MOVE_ARMY) {
-		moveSoldiers(state, move.s, move.d, move.c);
+        moveSoldiers(state, move.s, move.d, move.c);
+    } else if (moveType == BUILD_ACTION) {
+        console.log("You have chosen to build: ", move.u);
+        buildUpgrade(state, move.r, move.u);
 	} else if (moveType == END_TURN) {
 		state.m.l = 0;
 	}
@@ -1111,6 +1130,28 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 
 	// use up the move
     state.m.l--;
+}
+function buildUpgrade(state, region, upgrade) {
+    var temple = state.t[region.i];
+    var templeOwner = owner(state, region);
+    if (upgrade == SOLDIER) {
+        // soldiers work diferently
+        state.c[templeOwner.i] -= upgrade.c[0];
+        return addSoldiers(state, region, 1);
+    }
+
+    // upgrade the temple
+    if (temple.u != upgrade) {
+        // fresh level 1 upgrade!
+        temple.u = upgrade;
+        temple.l = 0;
+    } else {
+        // upgrade to a higher level
+        temple.l++;
+    }
+
+    // you have to pay for it, unfortunately
+    state.c[templeOwner.i] -= upgrade.c[temple.l];
 }
 
 function nextTurn(state) {
