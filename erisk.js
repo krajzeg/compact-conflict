@@ -567,6 +567,7 @@ function updateDisplay(gameState) {
 	function updateTempleDisplay(temple) {
         var element = temple.e;
 
+        // right color and right number of levels (corresponding to upgrade level)
         var templeLevels = temple.u ? (temple.l + 3) : 2;
         while (element) {
             element.style.display = (templeLevels > 0) ? 'block' : 'none';
@@ -575,6 +576,11 @@ function updateDisplay(gameState) {
             templeLevels--;
             element = element.firstChild;
         }
+
+        // highlight?
+        var selected = gameState.d && gameState.d.w == temple;
+        console.log(selected);
+        temple.e.classList[selected ? 'add' : 'remove']('l');
 	}
 	function updateSoldierDisplay(region, soldier, index) {
 		// we're still alive, so no removing our <div>
