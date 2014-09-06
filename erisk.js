@@ -15,15 +15,26 @@ var mapWidth = 30,
 // ==========================================================
 
 // === The four elements
-var earth = {c: '#554', t:'&#22303;'};
-var air   = {c: '#ccf', t:'&#39080;', s: earth};
-var fire  = {c: '#f00', t:'&#28779;', s: air};
-var water = {c: '#06c', t:'&#27700;', s: fire};
 var none = {c: '#777', t:''};
-earth.s = water;
+
+var upgrades = [
+    {n: "Earth temple", d: "Army X% better at defense",
+        c: [25, 50, 75], x: [15, 30, 50],
+        b: '#763'},
+    {n: "Fire temple",  d: "Army X% better at offense",
+        c: [30, 60, 90], x: [15, 30, 50],
+        b: '#f00'},
+    {n: "Air temple",   d: "X additional move(s) per turn",
+        c: [40, 80], x: [1,2],
+        b: '#fff'},
+    {n: "Water temple", d: "Income from regions X% higher",
+        c: [15, 30, 45], x: [33, 66, 100],
+        b: '#77f'},
+    {n: "New soldier", d: "Just an additional guy", c: range(10,100), x: []}
+];
 
 // === The possible move types
-var MOVE_ARMY = 1, END_TURN = 2;
+var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -342,22 +353,25 @@ function prepareDisplay(container, gameState) {
 			var center = temple.r.c, 
 				id = 'tp' + index, iid = 'ti' + index,
 				style = 'left:' + (center[0]-1.5) + '%;top:' + (center[1]-4) + '%';
-			
+
+            // create the temple <div>s
 			var templeHTML = div({
 				i: id,
 				c: 'o',
 				s: style
 			}, div({i: iid, c: 'i'}));
+            container.insertAdjacentHTML('beforeend', templeHTML);
 
-			container.insertAdjacentHTML('beforeend', templeHTML);
+            // retrieve elements and bind callbacks
 			temple.e = $(''+id);
-			temple.i = $(''+iid);			
+			temple.i = $(''+iid);
+            temple.e.onclick = invokeUICallback.bind(0, temple, 't');
 		});
 	}
 
 	function makeUI() { 
 		var html = div({i: 'tc', c: 'sc'});
-		html += div({c: 'sc un'}, map(gameState.p, function(player) {
+		html += div({i: 'pd', c: 'sc un'}, map(gameState.p, function(player) {
 			var pid = player.i;
 			return div({
 				i: 'pl' + pid, 
@@ -427,6 +441,15 @@ function uiPickMove(player, state, reportMoveCallback) {
 		}
 		updateDisplay(state);
 	};
+    uiCallbacks.t = function(temple) {
+        var region = temple.r;
+        if (owner(state,region) == player) {
+            state.d.t = BUILD_ACTION;
+            state.d.w = temple;
+            state.d.r = region;
+        }
+        updateDisplay(state);
+    };
 	uiCallbacks.b = function(which) {
 		if (which == 1) {
 			// end turn
@@ -509,20 +532,16 @@ function updateDisplay(gameState) {
 		region.e.style.fill = 'url(#' + gradientName + ')';
 	}
 	function updateTempleDisplay(temple) {
-		temple.e.style.background = temple.t.c;
-		temple.i.innerHTML = temple.t.t;
+		temple.e.style.background = temple.u ? temple.u.b : '#999';
 	}
 	function updateSoldierDisplay(region, soldier, index) {
 		// we're still alive, so no removing our <div>
 		soldiersStillAlive.push(soldier.i);
-		
+
 		// find or create a <div> for showing the soldier
 		var domElement = soldierDivsById[soldier.i];
 		if (!domElement) {
-			var html = div({
-				c: 's',
-				s: 'background:' + soldier.t.c
-			});
+			var html = div({c: 's'});
 			var container = $('m');
 			container.insertAdjacentHTML('beforeEnd', html);
 			domElement = soldierDivsById[soldier.i] = container.lastChild;			
@@ -545,6 +564,9 @@ function updateDisplay(gameState) {
 
 	function updateUI() {
 		var moveState = gameState.m;
+        var decisionState = gameState.d;
+        var buildingMode = decisionState && (decisionState.t == BUILD_ACTION);
+        var active = activePlayer(gameState);
 
 		// turn counter
 		$('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
@@ -564,14 +586,18 @@ function updateDisplay(gameState) {
 
 		// move info
 		var info;
-		if (moveState.m == MOVE_ARMY) {
+		if (buildingMode) {
+            info = 'What shall we build?' + div({c: 'ds'}, 'Money left: ' + gameState.c[active.i] + '$');
+        } else {
 			info = 'Move phase' + div({c: 'ds'}, 'Moves left: ' + moveState.l);
 		}
 		$('in').innerHTML = info;
 
+        // building mode
+        $('pd').style.display = buildingMode ? 'none' : 'block';
+
 		// buttons
 		$('u').innerHTML = '';
-		var decisionState = gameState.d;
 		map((decisionState && decisionState.b) || [], function(button, index) {
 			if (button.h) return;
 			var id = 'b' + index;
@@ -682,8 +708,8 @@ function makeInitialState() {
 
 	function putTemple(region, soldierCount) {
 		var index = region.i;
-		gameState.t[index] = {r: region, i: index, t: none};
-		addSoldiers(gameState, region, none, soldierCount);
+		gameState.t[index] = {r: region, i: index};
+		addSoldiers(gameState, region, soldierCount);
 	}
 }
 
@@ -984,7 +1010,7 @@ function afterMoveChecks(state) {
 }
 
 var soldierCounter;
-function addSoldiers(state, region, element, count) {
+function addSoldiers(state, region, count) {
     map(range(0,count), function() {
         soldierCounter = (soldierCounter + 1) || 0;
 
@@ -993,8 +1019,7 @@ function addSoldiers(state, region, element, count) {
             soldierList = state.s[region.i] = [];
 
         soldierList.push({
-            i: soldierCounter++,
-            t: element
+            i: soldierCounter++
         });
     });
 }
@@ -1074,7 +1099,7 @@ function nextTurn(state) {
 	forEachProperty(state.t, function(temple, regionIndex) {
 		if (state.o[regionIndex] == player) {
 			// this is our temple, add a soldier of the temple's element
-			addSoldiers(state, temple.r, temple.t, 1);
+			addSoldiers(state, temple.r, 1);
 		}
 	});
 
