@@ -306,92 +306,104 @@ function makePolygon(points, id, fill, noStroke) {
 	})
 }
 
+function showMap(container, gameState) {
+    var regions = gameState.r;
 
-function prepareDisplay(container, gameState) {
-	var regions = gameState.r;
+    // define gradients for rendering
+    var defs = elem('defs', {},
+            makeGradient('b', '#88f', '#113') +
+            makeGradient('l', '#fc9', '#530') +
+            makeGradient('lh', '#fea', '#742') +
+            makeGradient('d', '#210', '#000') +
+            makeGradient('w', '#55f', '#003') +
+            map(gameState.p, function(player, index) {
+                return makeGradient('p' + index, player.l, player.d) +
+                    makeGradient('p' + index + 'h', player.h, player.hd);
+            }).join(''));
 
-	var defs = elem('defs', {}, 		
-		makeGradient('b', '#88f', '#113') +
-		makeGradient('l', '#fc9', '#530') +
-        makeGradient('lh', '#fea', '#742') +
-		makeGradient('d', '#210', '#000') +
-		makeGradient('w', '#55f', '#003') +
-		map(gameState.p, function(player, index) {
-			return makeGradient('p' + index, player.l, player.d) +
-                   makeGradient('p' + index + 'h', player.h, player.hd);
-		}).join(''));
+    var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
+    var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
+    var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
+    var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, true);
 
-	var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
-	var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
-	var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
-	var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, true);
+    // replace the map container contents with the new map
+    container.innerHTML = elem('svg', {
+        viewbox: '0 0 100 100',
+        preserveAspectRatio: 'none'
+    }, defs + ocean + shadows + bottoms + tops);
 
-	container.innerHTML = elem('svg', {
-		viewbox: '0 0 100 100',
-		preserveAspectRatio: 'none'
-	}, defs + ocean + shadows + bottoms + tops);
+    // clean some internal structures used to track HTML nodes
+    soldierDivsById = {};
 
-	map(regions, function(region, index) {
-		region.e = $('r' + index);
-		region.c = projectPoint(centerOfWeight(region.p));
+    // hook up region objects to their HTML elements
+    map(regions, function(region, index) {
+        region.e = $('r' + index);
+        region.c = projectPoint(centerOfWeight(region.p));
 
-		region.e.onclick = invokeUICallback.bind(0, region, 'c');
-		region.e.onmouseover = invokeUICallback.bind(0, region, 'i');
-		region.e.onmouseout = invokeUICallback.bind(0, region, 'o');
+        region.e.onclick = invokeUICallback.bind(0, region, 'c');
+        region.e.onmouseover = invokeUICallback.bind(0, region, 'i');
+        region.e.onmouseout = invokeUICallback.bind(0, region, 'o');
 
         region.e.oncontextmenu = debug.bind(0, region);
-	});
-    // clicking on non-active parts of screen is the same as clicking on a 'null' region
+    });
+
+    // additional callbacks for better UI
     doc.body.onclick = invokeUICallback.bind(0, null, 'c');
 
-	makeTemples();
-	makeUI();
+    // make the temple <div>s
+    makeTemples();
 
-	function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
-		return elem('g', {}, map(regions, function(region, index) {
-			return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, noStroke);
-		}).join(''));
-	}
 
-	function makeTemples() {
-		forEachProperty(gameState.t, function(temple, index) {
+    function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
+        return elem('g', {}, map(regions, function(region, index) {
+            return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, noStroke);
+        }).join(''));
+    }
 
-			var center = temple.r.c, 
-				id = 'tp' + index, iid = 'ti' + index,
-				style = 'left:' + (center[0]-1.5) + '%;top:' + (center[1]-4) + '%';
+    function makeTemples() {
+        forEachProperty(gameState.t, function(temple, index) {
+
+            var center = temple.r.c,
+                id = 'tp' + index, iid = 'ti' + index,
+                style = 'left:' + (center[0]-1.5) + '%;top:' + (center[1]-4) + '%';
 
             // create the temple <div>s
-			var templeHTML = div({
-				i: id,
-				c: 'o',
-				s: style
-			}, div({c: 'i'}, div({c: 'i'}, div({c: 'i'}, div({c: 'i'})))));
+            var templeHTML = div({
+                i: id,
+                c: 'o',
+                s: style
+            }, div({c: 'i'}, div({c: 'i'}, div({c: 'i'}, div({c: 'i'})))));
             container.insertAdjacentHTML('beforeend', templeHTML);
 
             // retrieve elements and bind callbacks
-			temple.e = $(''+id);
+            temple.e = $(''+id);
             temple.e.onclick = invokeUICallback.bind(0, temple.r, 't');
-		});
-	}
+        });
+    }
+}
 
-	function makeUI() { 
-		var html = div({i: 'tc', c: 'sc'});
-		html += div({i: 'pd', c: 'sc un'}, map(gameState.p, function(player) {
-			var pid = player.i;
-			return div({
-				i: 'pl' + pid, 
-				c: 'pli', 
-				style: 'background: ' + player.d
-			}, player.n + 
-				div({c: 'ad', i: 'pr' + pid}) +
-				div({c: 'ad', i: 'pc' + pid})
-			);
-		}).join(''));
+function switchToIngameUI(gameState) {
+    // turn counter
+    var html = div({i: 'tc', c: 'sc'});
 
-		html += div({c: 'sc', i: 'in'});		
+    // player box area
+    html += div({i: 'pd', c: 'sc un'}, map(gameState.p, function(player) {
+        var pid = player.i;
+        return div({
+            i: 'pl' + pid,
+            c: 'pli',
+            style: 'background: ' + player.d
+        }, player.n +
+            div({c: 'ad', i: 'pr' + pid}) +
+            div({c: 'ad', i: 'pc' + pid})
+        );
+    }).join(''));
 
-		$('d').innerHTML = html;
-	}
+    // info box
+    html += div({c: 'sc', i: 'in'});
+
+    // set it all
+    $('d').innerHTML = html;
 }
 
 // ==========================================================
@@ -554,40 +566,34 @@ function oneAtATime(duration, fn) {
 // ==========================================================
 
 var soldierDivsById = {};
-var displayedState;
-function updateDisplay(gameState) {
-    // just for debugging
-    displayedState = gameState;
+function updateMapDisplay(gameState) {
+    map(gameState.r, updateRegionDisplay);
+    forEachProperty(gameState.t, updateTempleDisplay);
 
-	map(gameState.r, updateRegionDisplay);
-	forEachProperty(gameState.t, updateTempleDisplay);
+    var soldiersStillAlive = [];
+    forEachProperty(gameState.s, function(soldiers, regionIndex) {
+        map(soldiers, updateSoldierDisplay.bind(0, gameState.r[regionIndex]));
+    });
+    forEachProperty(soldierDivsById, function(div, id) {
+        if (soldiersStillAlive.indexOf(parseInt(id)) < 0) {
+            // this is an ex-div - in other words, the soldier it represented is dead
+            $('m').removeChild(div);
+            delete soldierDivsById[id]; // surprisingly, this should be safe to do during iteration - http://stackoverflow.com/a/19564686
+        }
+    });
 
-	var soldiersStillAlive = [];
-	forEachProperty(gameState.s, function(soldiers, regionIndex) {
-		map(soldiers, updateSoldierDisplay.bind(0, gameState.r[regionIndex]));
-	});
-	forEachProperty(soldierDivsById, function(div, id) {
-		if (soldiersStillAlive.indexOf(parseInt(id)) < 0) {
-			// this is an ex-div - in other words, the soldier it represented is dead
-			$('m').removeChild(div);
-			delete soldierDivsById[id]; // surprisingly, this should be safe to do during iteration - http://stackoverflow.com/a/19564686
-		}
-	});
-
-	updateUI();
-
-	function updateRegionDisplay(region) {
-		var regionOwner = owner(gameState, region);
+    function updateRegionDisplay(region) {
+        var regionOwner = owner(gameState, region);
         var gradientName = (regionOwner ? 'p' + regionOwner.i : 'l');
         var highlighted = contains(gameState.d && gameState.d.h || [], region);
 
         if (highlighted)
             gradientName += 'h';
 
-		region.e.style.fill = 'url(#' + gradientName + ')';
+        region.e.style.fill = 'url(#' + gradientName + ')';
         region.e.style.cursor = highlighted ? 'move' : 'default';
-	}
-	function updateTempleDisplay(temple) {
+    }
+    function updateTempleDisplay(temple) {
         var element = temple.e;
 
         // right color and right number of levels (corresponding to upgrade level)
@@ -607,86 +613,99 @@ function updateDisplay(gameState) {
         // highlight?
         var selected = gameState.d && gameState.d.w == temple;
         temple.e.classList[selected ? 'add' : 'remove']('l');
-	}
-	function updateSoldierDisplay(region, soldier, index) {
-		// we're still alive, so no removing our <div>
-		soldiersStillAlive.push(soldier.i);
+    }
+    function updateSoldierDisplay(region, soldier, index) {
+        // we're still alive, so no removing our <div>
+        soldiersStillAlive.push(soldier.i);
 
-		// find or create a <div> for showing the soldier
-		var domElement = soldierDivsById[soldier.i];
-		if (!domElement) {
-			var html = div({c: 's'});
-			var container = $('m');
-			container.insertAdjacentHTML('beforeEnd', html);
-			domElement = soldierDivsById[soldier.i] = container.lastChild;
+        // find or create a <div> for showing the soldier
+        var domElement = soldierDivsById[soldier.i];
+        if (!domElement) {
+            var html = div({c: 's'});
+            var container = $('m');
+            container.insertAdjacentHTML('beforeEnd', html);
+            domElement = soldierDivsById[soldier.i] = container.lastChild;
             domElement.onclick = invokeUICallback.bind(0, soldier, 's');
-		}
+        }
 
-		// (re)calculate where the <div> should be
-		var center = region.c;
-		var totalSoldiers = soldierCount(gameState, region);
-		var offset = (-0.6 * totalSoldiers + index * 1.2);
-		domElement.style.left = (center[0]+offset-0.3) + '%';
-		domElement.style.top  = (center[1]+1.5+offset*0.2) + '%';
+        // (re)calculate where the <div> should be
+        var center = region.c;
+        var totalSoldiers = soldierCount(gameState, region);
+        var offset = (-0.6 * totalSoldiers + index * 1.2);
+        domElement.style.left = (center[0]+offset-0.3) + '%';
+        domElement.style.top  = (center[1]+1.5+offset*0.2) + '%';
 
-		// selected?
-		var decisionState = gameState.d || {};	
-		if ((decisionState.s == region) && (index < decisionState.c))
-			domElement.classList.add('l');
-		else
-			domElement.classList.remove('l');
-	}
+        // selected?
+        var decisionState = gameState.d || {};
+        if ((decisionState.s == region) && (index < decisionState.c))
+            domElement.classList.add('l');
+        else
+            domElement.classList.remove('l');
+    }
+}
 
-	function updateUI() {
-		var moveState = gameState.m;
-        var decisionState = gameState.d;
-        var buildingMode = decisionState && (decisionState.t == BUILD_ACTION);
-        var active = activePlayer(gameState);
+function updateIngameUI(gameState) {
+    var moveState = gameState.m;
+    var decisionState = gameState.d;
+    var buildingMode = decisionState && (decisionState.t == BUILD_ACTION);
+    var active = activePlayer(gameState);
 
-		// turn counter
-		$('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
+    // turn counter
+    $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
 
-		// player data
-		map(gameState.p, function(player, index) {
-			$('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi'; // active or not?
-            var regions = regionCount(gameState, player);
-            if (regions) {
-                $('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;'; // region count
-                $('pc' + index).innerHTML = gameState.c[player.i] + '&#9775;'; // cash on hand
-            } else {
-                $('pr' + index).innerHTML = '&#9760;'; // skull and crossbones, you're dead
-                $('pc' + index).innerHTML = '';
-            }
-		});
-
-		// move info
-		var info;
-		if (buildingMode) {
-            info = 'What shall we build?' + div({c: 'ds'}, 'Money left: ' + gameState.c[active.i] + '$');
+    // player data
+    map(gameState.p, function(player, index) {
+        $('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi'; // active or not?
+        var regions = regionCount(gameState, player);
+        if (regions) {
+            $('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;'; // region count
+            $('pc' + index).innerHTML = gameState.c[player.i] + '&#9775;'; // cash on hand
         } else {
-			info = 'Move phase' + div({c: 'ds'}, 'Moves left: ' + moveState.l);
-		}
-		$('in').innerHTML = info;
+            $('pr' + index).innerHTML = '&#9760;'; // skull and crossbones, you're dead
+            $('pc' + index).innerHTML = '';
+        }
+    });
 
-        // building mode
-        $('pd').style.display = buildingMode ? 'none' : 'block';
+    // move info
+    var info;
+    if (buildingMode) {
+        info = 'What shall we build?' + div({c: 'ds'}, 'Money left: ' + gameState.c[active.i] + '$');
+    } else {
+        info = 'Move phase' + div({c: 'ds'}, 'Moves left: ' + moveState.l);
+    }
+    $('in').innerHTML = info;
 
-		// buttons
-		$('u').innerHTML = '';
-		map((decisionState && decisionState.b) || [], function(button, index) {
-			if (button.h) return;
-			var id = 'b' + index;
+    // building mode
+    $('pd').style.display = buildingMode ? 'none' : 'block';
 
-            var buttonContents = button.t;
-            if (button.d)
-                buttonContents += div({c: 'ds'}, button.d);
+    // buttons
+    updateButtons(decisionState && decisionState.b);
+}
 
-			var buttonHTML = elem('a', {href: '#', i: id, c: button.o ? 'off' : ''}, buttonContents);
-			$('u').insertAdjacentHTML('beforeend', buttonHTML);
-            if (!button.o)
-			    $(id).onclick = invokeUICallback.bind(0, index, 'b');
-		});
-	}
+function updateButtons(buttons) {
+    $('u').innerHTML = '';
+    map(buttons || [], function(button, index) {
+        if (button.h) return;
+        var id = 'b' + index;
+
+        var buttonContents = button.t;
+        if (button.d)
+            buttonContents += div({c: 'ds'}, button.d);
+
+        var buttonHTML = elem('a', {href: '#', i: id, c: button.o ? 'off' : ''}, buttonContents);
+        $('u').insertAdjacentHTML('beforeend', buttonHTML);
+        if (!button.o)
+            $(id).onclick = invokeUICallback.bind(0, index, 'b');
+    });
+}
+
+var displayedState;
+function updateDisplay(gameState) {
+    // just for debugging
+    displayedState = gameState;
+
+    updateMapDisplay(gameState);
+    updateIngameUI(gameState);
 }
 
 function showBanner(background, text) {
@@ -739,6 +758,7 @@ function makeInitialState() {
 	setupTemples();
 
 	return gameState;
+
 
 	function distance(region1, region2) {
 		var c1 = centerOfWeight(region1.p), c2 = centerOfWeight(region2.p),
@@ -805,18 +825,6 @@ function aiPickMove(player, state, reportMoveCallback) {
     // use a min-max search to find the best move looking a few steps forward
     performMinMax(player, state, depth, reportMoveCallback);
 }
-
-/*
-{
-    depth: ,
-    analyzingOnBehalfOf: ->
-    parent: -> {},
-    state: -> state
-    unconsideredMoves: [...],
-    bestMove: ...,
-    bestValue: 17.2
-}
-*/
 
 function minMaxDoSomeWork(node) {
     if (node.d == 0) {
@@ -1312,6 +1320,36 @@ function upgradeLevel(state, player, upgradeType) {
 }
 
 // ==========================================================
+// This is the code for the game setup screen.
+// ==========================================================
+
+function runSetupScreen() {
+    // generate initial map
+    var game;
+    regenerateMap();
+
+    // add a "Start game" button
+    updateButtons([{t: "Generate new map"}, {t: "Start game"}]);
+
+    // callback for actually starting the game
+    uiCallbacks.b = function(which) {
+        if (which == 0) {
+            regenerateMap();
+        } else {
+            switchToIngameUI(game);
+            updateDisplay(game);
+            playOneMove(game);
+        }
+    }
+
+    function regenerateMap() {
+        game = makeInitialState();
+        showMap($('m'), game);
+        updateMapDisplay(game);
+    }
+}
+
+// ==========================================================
 // This part of the code initalizes a new game.
 // ==========================================================
 
@@ -1320,8 +1358,5 @@ function upgradeLevel(state, player, upgradeType) {
 
 // start the game
 !function() {
-	var state = makeInitialState();
-	prepareDisplay($('m'), state);
-	updateDisplay(state);
-	playOneMove(state);
+    runSetupScreen();
 }();
