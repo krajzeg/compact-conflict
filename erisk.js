@@ -6,7 +6,6 @@ var mapWidth = 30,
 	mapHeight = 20, 
 	maxRegionSize = 8,
 	neededRegions = 22,
-	playerCount = 3,
 	movesPerTurn = 3,
 	turnCount = 15;
 
@@ -35,6 +34,9 @@ var UPGRADES = [
     ],
     LEVELS = ["Temple", "Cathedral", "House"],
     SOLDIER = UPGRADES[0], WATER = UPGRADES[1], EARTH = UPGRADES[2], FIRE = UPGRADES[3], AIR = UPGRADES[4];
+
+// === Constants for setup screen
+var PLAYER_CPU = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -382,7 +384,7 @@ function showMap(container, gameState) {
     }
 }
 
-function switchToIngameUI(gameState) {
+function prepareIngameUI(gameState) {
     // turn counter
     var html = div({i: 'tc', c: 'sc'});
 
@@ -740,13 +742,16 @@ function preserveAspect() {
 // Preparing the initial game state happens here
 // ==========================================================
 
-function makeInitialState() {
-	var players = [
-		{i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#fff', hd:'#a80', u: uiPickMove},
-		{i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944', u: uiPickMove},
-		{i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759', u: uiPickMove},
-		{i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484', u: aiPickMove}
-	].slice(0, playerCount);
+function makeInitialState(setup) {
+    var players = [];
+    map(setup.p, function(playerController, playerIndex) {
+        if (playerController == PLAYER_OFF) return;
+        var player = deepCopy(PLAYER_TEMPLATES[playerIndex], 1);
+        player.u = (playerController == PLAYER_HUMAN) ? uiPickMove : aiPickMove;
+        player.i = players.length;
+        players.push(player);
+    });
+
 	var regions = generateMap();
 	var gameState = {
 		p: players,
@@ -784,7 +789,7 @@ function makeInitialState() {
 		// pick three regions that are as far away as possible from each other
 		// for the players' initial temples
 		var possibleSetups = map(range(0,1000), function() {
-			return map(range(0, playerCount), randomRegion);
+			return map(gameState.p, randomRegion);
 		});
 		var templeRegions = max(possibleSetups, distanceScore);
 
@@ -798,7 +803,7 @@ function makeInitialState() {
 		});
 
 		// setup neutral temples
-		map(range(0, playerCount), function() {
+		map(gameState.p, function() {
 			var bestRegion = max(gameState.r, function(region) {
 				return distanceScore(templeRegions.concat(region));
 			});
@@ -1225,6 +1230,7 @@ function nextTurn(state) {
 
 	// go to next player (skipping dead ones)
     do {
+        var playerCount = state.p.length;
         var playerIndex = (state.m.p + 1) % playerCount, upcomingPlayer = state.p[playerIndex],
             turnNumber = state.m.t + (playerIndex ? 0 : 1);
         state.m = {t: turnNumber, p: playerIndex, m: MOVE_ARMY, l: movesPerTurn + upgradeLevel(state, upcomingPlayer, AIR)};
@@ -1323,27 +1329,86 @@ function upgradeLevel(state, player, upgradeType) {
 // This is the code for the game setup screen.
 // ==========================================================
 
+var PLAYER_TEMPLATES = [
+    {i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#fff', hd:'#a80'},
+    {i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
+    {i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
+    {i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
+];
+
+function prepareSetupUI() {
+    // player box area
+    var html = div({c: 'sc ds'}, "Player setup");
+    var playerBoxes = map(PLAYER_TEMPLATES, function(player) {
+        var pid = player.i;
+        return div({
+                i: 'pl' + pid,
+                c: 'pl ps',
+                style: 'background: ' + player.d
+            }, player.n + playerButtons(pid)
+        );
+    }).join("");
+    html += div({i: 'pd', c: 'sc un'}, playerBoxes);
+
+    // realize the UI
+    $('d').innerHTML = html;
+
+    // setup callbacks for players
+    for2d(0, 0, PLAYER_TEMPLATES.length, 3, function(playerIndex, buttonIndex) {
+        $('sb' + playerIndex + buttonIndex).onclick = invokeUICallback.bind(0, {p: playerIndex, b: buttonIndex}, 'sb')
+    });
+
+    function playerButtons(playerIndex) {
+        return map(["CPU", "Human", "Off"], function(label, buttonIndex) {
+          var id = "sb" + playerIndex + buttonIndex;
+          return elem('a', {i: id, c: 'rt', href: '#'}, label);
+        }).join("");
+    }
+}
+
 function runSetupScreen() {
+    // initial setup
+    var setup = {
+        p: [PLAYER_HUMAN, PLAYER_CPU, PLAYER_CPU, PLAYER_OFF]
+    };
+
+    // prepare UI
+    prepareSetupUI();
+    updatePlayerButtons();
+    updateButtons([{t: "Change map"}, {t: "Start game"}]);
+
     // generate initial map
     var game;
     regenerateMap();
 
-    // add a "Start game" button
-    updateButtons([{t: "Generate new map"}, {t: "Start game"}]);
-
-    // callback for actually starting the game
+    // callback for the buttons on the bottom
     uiCallbacks.b = function(which) {
         if (which == 0) {
             regenerateMap();
         } else {
-            switchToIngameUI(game);
+            prepareIngameUI(game);
             updateDisplay(game);
             playOneMove(game);
         }
+    };
+    // callback for player setup buttons
+    uiCallbacks.sb = function(event) {
+        // set the controller type for the player
+        setup.p[event.p] = event.b;
+        updatePlayerButtons();
+        regenerateMap();
+    };
+
+    function updatePlayerButtons() {
+        map(setup.p, function(controller, playerIndex) {
+           map(range(0,3), function(buttonIndex) {
+               $('sb' + playerIndex + buttonIndex).classList[(controller == buttonIndex) ? 'add' : 'remove']('sl');
+           })
+        });
     }
 
     function regenerateMap() {
-        game = makeInitialState();
+        game = makeInitialState(setup);
         showMap($('m'), game);
         updateMapDisplay(game);
     }

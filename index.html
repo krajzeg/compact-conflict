@@ -64,7 +64,6 @@
 		}
 
 		/* Information display styles */
-
 		.sc { 
 			margin: 2px 2px; 
 			padding: 10px 15px; 
@@ -76,17 +75,26 @@
 		.un {
 			padding: 5px 0;
 		}
+        .ds {
+            font-size: 80%; color: #aaa;
+        }
+
+        /* Player boxes */
+        /* the boxes themselves - .pl is active, .pi inactive */
 		.pl, .pi {
 			border: 2px solid rgba(0,0,0,0.5); margin:0 5px; padding: 4px 10px;
 		}
 		.pi {
 			opacity: 0.4; text-shadow: none;
 		}
+        /* additional style used on the boxes during game setup */
+        .ps {
+            padding: 8px 4px 8px 8px;
+            font-size: 80%;
+        }
+		/* additional information displayed inside the box */
 		.ad {
 			float: right; width: 20%; text-align: right; font-size: 90%;
-		}
-		.ds {
-			font-size: 80%; color: #aaa;
 		}
 
 		/* Buttons */
@@ -106,19 +114,35 @@
 			padding: 8px;
             font-size: 80%;
             transform: translate3d(0,0,0);
-            z-index: 1;
+            z-index: 10;
 		}
 		a:hover {
 			background: #444;
 			color: #fff;
             transform: translate3d(0,0,1em);
-            z-index: 10;
+            z-index: 20;
 		}
         a.off, a.off:hover {
             opacity: 0.3;
             background: #000;
             transform: translate3d(0,0,0);
             cursor: default !important;
+        }
+
+        a.rt {
+            display: block;
+            float: right;
+            padding: 3px;
+            margin: -4px 0 0 1px;
+            border: 1px solid #000;
+            font-size: 100%;
+            text-shadow: none;
+            opacity: 0.5;
+        }
+
+        a.rt.sl {
+            background: #fff;
+            color: #000;
         }
 
         #bn {
