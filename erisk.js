@@ -1367,22 +1367,20 @@ function prepareSetupUI() {
 }
 
 function runSetupScreen() {
-    // initial setup
-    var setup = {
+    // generate initial setup and game state
+    var game, setup  = {
         p: [PLAYER_HUMAN, PLAYER_CPU, PLAYER_CPU, PLAYER_OFF]
     };
+    regenerateMap();
 
     // prepare UI
     prepareSetupUI();
+    updateBottomButtons();
     updatePlayerButtons();
-    updateButtons([{t: "Change map"}, {t: "Start game"}]);
-
-    // generate initial map
-    var game;
-    regenerateMap();
 
     // callback for the buttons on the bottom
     uiCallbacks.b = function(which) {
+        if (!setupValid()) return;
         if (which == 0) {
             regenerateMap();
         } else {
@@ -1396,8 +1394,25 @@ function runSetupScreen() {
         // set the controller type for the player
         setup.p[event.p] = event.b;
         updatePlayerButtons();
+        updateBottomButtons();
         regenerateMap();
     };
+
+    function setupValid() {
+        var enabledPlayers = sum(setup.p, function(playerState) {
+            return (playerState != PLAYER_OFF) ? 1 : 0;
+        });
+        console.log(enabledPlayers);
+        return enabledPlayers > 1;
+    }
+
+    function updateBottomButtons() {
+        var buttonsDisabled = !setupValid();
+        updateButtons([
+            {t: "Change map", o: buttonsDisabled},
+            {t: "Start game", o: buttonsDisabled}
+        ]);
+    }
 
     function updatePlayerButtons() {
         map(setup.p, function(controller, playerIndex) {
@@ -1408,9 +1423,11 @@ function runSetupScreen() {
     }
 
     function regenerateMap() {
-        game = makeInitialState(setup);
-        showMap($('m'), game);
-        updateMapDisplay(game);
+        if (setupValid()) {
+            game = makeInitialState(setup);
+            showMap($('m'), game);
+            updateMapDisplay(game);
+        }
     }
 }
 
