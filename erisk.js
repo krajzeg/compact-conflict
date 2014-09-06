@@ -1204,7 +1204,8 @@ function soldierCount(state, region) {
 }
 
 function income(state, player) {
-    var baseIncome = regionCount(state, player) * 2;
+    var incomePerRegion = 0.02 * (100 + upgradeLevel(state, player, WATER)),
+        baseIncome = Math.ceil(regionCount(state, player) * incomePerRegion);
     var upkeep = sum(state.r, function(region) {
         return ((owner(state, region) == player) && (!state.t[region.i])) ? soldierCount(state, region) : 0;
     });
