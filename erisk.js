@@ -512,7 +512,7 @@ function uiPickMove(player, state, reportMoveCallback) {
             var level = (temple.u == upgrade) ? (temple.l+1) : ((upgrade == SOLDIER) ? state.l[templeOwner.i] : 0);
 
             var cost = upgrade.c[level];
-            var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "&#9829;)");
+            var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "&#9775;)");
             var description = template(upgrade.d, upgrade.x[level]);
 
             return {t: text, d: description, o: cost > cash(state, player), h: level >= upgrade.c.length};
@@ -652,7 +652,7 @@ function updateDisplay(gameState) {
             var regions = regionCount(gameState, player);
             if (regions) {
                 $('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;'; // region count
-                $('pc' + index).innerHTML = gameState.c[player.i] + '&#9829;'; // cash on hand
+                $('pc' + index).innerHTML = gameState.c[player.i] + '&#9775;'; // cash on hand
             } else {
                 $('pr' + index).innerHTML = '&#9760;'; // skull and crossbones, you're dead
                 $('pc' + index).innerHTML = '';
@@ -758,7 +758,7 @@ function makeInitialState() {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = gameState.l[index] = 0;
+			gameState.c[index] = gameState.l[index] = 600;
 		});
 
 		// pick three regions that are as far away as possible from each other
@@ -1167,6 +1167,10 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
             state.o[toRegion.i] = fromOwner;
             // mark as conquered to prevent moves from this region in the same turn
             state.m.z = (state.m.z || []).concat(toRegion);
+            // if there was a temple, reset its upgrades
+            var temple = state.t[toRegion.i];
+            if (temple)
+                delete temple.u;
         }
     }
 
