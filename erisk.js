@@ -14,27 +14,26 @@ var mapWidth = 30,
 // Game-relevant constants
 // ==========================================================
 
-// === The four elements
-var none = {c: '#777', t:''};
-
-var upgrades = [
-    {n: "Earth temple", d: "Army X% better at defense",
-        c: [25, 50, 75], x: [15, 30, 50],
-        b: '#763'},
-    {n: "Fire temple",  d: "Army X% better at offense",
-        c: [30, 60, 90], x: [15, 30, 50],
-        b: '#f00'},
-    {n: "Air temple",   d: "X additional move(s) per turn",
-        c: [40, 80], x: [1,2],
-        b: '#fff'},
-    {n: "Water temple", d: "Income from regions X% higher",
-        c: [15, 30, 45], x: [33, 66, 100],
-        b: '#77f'},
-    {n: "New soldier", d: "Just an additional guy", c: range(10,100), x: []}
-];
-
 // === The possible move types
 var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
+
+// === Possible temple upgrades
+var UPGRADES = [
+    {n: "Soldier", d: "", c: range(10,100), x: []},
+    {n: "X of Water", d: "Region income X% higher.",
+        c: [15, 30, 45], x: [33, 66, 100],
+        b: '#77f'},
+    {n: "X of Earth", d: "Army X% better at defense.",
+        c: [25, 50, 75], x: [15, 30, 50],
+        b: '#763'},
+    {n: "X of Fire",  d: "Army X% better at offense.",
+        c: [30, 60, 90], x: [15, 30, 50],
+        b: '#f00'},
+    {n: "X of Air",   d: "X additional move(s) per turn.",
+        c: [40, 80], x: [1,2],
+        b: '#fff'}
+];
+var LEVELS = ["Temple", "Cathedral", "House"];
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -159,6 +158,10 @@ function clamp(number, low, high) {
 
 function now() {
     return Date.now();
+}
+
+function template(text, replacement) {
+    return text.replace(/X/g, replacement);
 }
 
 // ==========================================================
@@ -441,15 +444,19 @@ function uiPickMove(player, state, reportMoveCallback) {
 		}
 		updateDisplay(state);
 	};
+
     uiCallbacks.t = function(temple) {
         var region = temple.r;
         if (owner(state,region) == player) {
-            state.d.t = BUILD_ACTION;
-            state.d.w = temple;
-            state.d.r = region;
+            state.d = {
+                t: BUILD_ACTION,
+                w: temple, r: region,
+                b: makeUpgradeButtons(temple)
+            };
         }
         updateDisplay(state);
     };
+
 	uiCallbacks.b = function(which) {
 		if (which == 1) {
 			// end turn
@@ -466,6 +473,18 @@ function uiPickMove(player, state, reportMoveCallback) {
         state.d.h = state.r.filter(regionHasActiveArmy.bind(0, state, player));
 		updateDisplay(state);
 	}
+
+    function makeUpgradeButtons(temple) {
+        var upgradeButtons = map(UPGRADES, function(upgrade) {
+            var level = 0;
+            var cost = upgrade.c[level];
+            var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "$)");
+            var description = template(upgrade.d, upgrade.x[level]);
+            return {t: text, d: description, o: cost > cash(state, player)};
+        });
+        upgradeButtons.push({t: "Cancel"});
+        return upgradeButtons;
+    }
 }
 
 // ==========================================================
@@ -601,7 +620,12 @@ function updateDisplay(gameState) {
 		map((decisionState && decisionState.b) || [], function(button, index) {
 			if (button.h) return;
 			var id = 'b' + index;
-			var buttonHTML = elem('a', {href: '#', i: id}, button.t);
+
+            var buttonContents = button.t;
+            if (button.d)
+                buttonContents += div({c: 'ds'}, button.d);
+
+			var buttonHTML = elem('a', {href: '#', i: id, c: button.o ? 'off' : ''}, buttonContents);
 			$('u').insertAdjacentHTML('beforeend', buttonHTML);
 			$(id).onclick = invokeUICallback.bind(0, index, 'b');
 		});
@@ -677,7 +701,7 @@ function makeInitialState() {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = 0;
+			gameState.c[index] = 15;
 		});
 
 		// pick three regions that are as far away as possible from each other
@@ -1153,6 +1177,10 @@ function activePlayer(state) {
 
 function owner(state, region) {
     return state.o[region.i];
+}
+
+function cash(state, player) {
+    return state.c[player.i];
 }
 
 // ==========================================================

@@ -90,21 +90,34 @@
 		/* Buttons */
 		#u {
 			bottom: 12px; left: 12px; right: 12px;
+            perspective: 15em;
 		}
 		a {
 			display: block;
+            position: relative;
 			text-align: center;
 			text-decoration: none;
 			margin-top: 2px;
-			color: #aaa;
+			color: #dde;
 			border: 2px solid #333;
 			background: #000;
-			padding: 4px;
+			padding: 8px;
+            font-size: 80%;
+            transform: translate3d(0,0,0);
+            z-index: 1;
 		}
 		a:hover {
-			background: #666;
+			background: #444;
 			color: #fff;
+            transform: translate3d(0,0,1em);
+            z-index: 10;
 		}
+        a.off, a.off:hover {
+            opacity: 0.3;
+            background: #000;
+            transform: translate3d(0,0,0);
+            cursor: default !important;
+        }
 
         #bn {
             position: absolute;
