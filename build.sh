@@ -1,5 +1,7 @@
 #!/bin/sh
 
+mkdir -p dist
+
 # Minify Javascript
 uglifyjs erisk.js -m toplevel -c -o dist/erisk.js || exit 1
 # Minify HTML
