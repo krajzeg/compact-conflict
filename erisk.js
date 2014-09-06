@@ -494,7 +494,8 @@ function uiPickMove(player, state, reportMoveCallback) {
             var cost = upgrade.c[level];
             var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "$)");
             var description = template(upgrade.d, upgrade.x[level]);
-            return {t: text, d: description, o: cost > cash(state, player)};
+
+            return {t: text, d: description, o: cost > cash(state, player), h: level >= upgrade.c.length};
         });
         upgradeButtons.push({t: "Cancel"});
         return upgradeButtons;
@@ -716,7 +717,7 @@ function makeInitialState() {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = 60;
+			gameState.c[index] = 600;
 		});
 
 		// pick three regions that are as far away as possible from each other
