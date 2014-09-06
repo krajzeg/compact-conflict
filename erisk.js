@@ -1088,9 +1088,9 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 	// do we have a fight?
 	if (fromOwner != toOwner) {
 		// first, the attackers kill some defenders
-		var incomingStrength = howMany;
-		var defendingStrength = toList.length;
-		
+		var incomingStrength = howMany * (1 + upgradeLevel(state, fromOwner, FIRE) * 0.01);
+		var defendingStrength = toList.length * (1 + upgradeLevel(state, toOwner, EARTH) * 0.01);
+
 		if (defendingStrength) {
 			var repeats = min([incomingStrength, defendingStrength]);
 			var attackerWinChance = 100 * Math.pow(incomingStrength / defendingStrength, 1.6);
@@ -1120,8 +1120,6 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
             if (toList.length) {
                 // if there are defenders left, nobody will move in
                 howMany = 0;
-            } else {
-                // conquered - add to list of conquered regions to prevent moves
             }
 		}
 	}
@@ -1238,7 +1236,11 @@ function cash(state, player) {
 }
 
 function upgradeLevel(state, player, upgradeType) {
-    console.log(state.t);
+    if (!player) {
+        // neutral forces always have upgrade level 0;
+        return 0;
+    }
+
     return max(map(state.r, function(region) {
         // does it have a temple?
         var temple = state.t[region.i];
