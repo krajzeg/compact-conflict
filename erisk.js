@@ -489,7 +489,6 @@ function uiPickMove(player, state, reportMoveCallback) {
     function makeUpgradeButtons(temple) {
         var upgradeButtons = map(UPGRADES, function(upgrade) {
             var level = (temple.u == upgrade) ? (temple.l+1) : 0;
-            console.log(temple, upgrade.n, level);
             var cost = upgrade.c[level];
             var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "$)");
             var description = template(upgrade.d, upgrade.x[level]);
@@ -1183,15 +1182,15 @@ function nextTurn(state) {
 
 	// go to next player (skipping dead ones)
     do {
-        var nextPlayer = (state.m.p + 1) % playerCount;
-        var turnNumber = state.m.t + (nextPlayer ? 0 : 1);
-        state.m = {t: turnNumber, p: nextPlayer, m: MOVE_ARMY, l: movesPerTurn};
-    } while (!regionCount(state, activePlayer(state)));
+        var playerIndex = (state.m.p + 1) % playerCount, upcomingPlayer = state.p[playerIndex],
+            turnNumber = state.m.t + (playerIndex ? 0 : 1);
+        state.m = {t: turnNumber, p: playerIndex, m: MOVE_ARMY, l: movesPerTurn + upgradeLevel(state, upcomingPlayer, AIR)};
+    } while (!regionCount(state, upcomingPlayer));
 
     // if this is not simulated, we'd like a banner
     if (!state.a) {
-        oneAtATime(1000, updateDisplay.bind(0, state));
-        showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");
+        /*oneAtATime(1000, updateDisplay.bind(0, state));
+        showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");*/
     }
 }
 
@@ -1235,6 +1234,19 @@ function owner(state, region) {
 
 function cash(state, player) {
     return state.c[player.i];
+}
+
+function upgradeLevel(state, player, upgradeType) {
+    console.log(state.t);
+    return max(map(state.r, function(region) {
+        // does it have a temple?
+        var temple = state.t[region.i];
+        if (!temple) return 0;
+        // does it belong to us?
+        if (owner(state, region) != player) return 0;
+        // does it have the right type of upgrade?
+        return (temple.u == upgradeType) ? upgradeType.x[temple.l] : 0;
+    }));
 }
 
 // ==========================================================
