@@ -579,7 +579,6 @@ function updateDisplay(gameState) {
 
         // highlight?
         var selected = gameState.d && gameState.d.w == temple;
-        console.log(selected);
         temple.e.classList[selected ? 'add' : 'remove']('l');
 	}
 	function updateSoldierDisplay(region, soldier, index) {
@@ -990,7 +989,6 @@ function makeMove(state, move) {
 	if (moveType == MOVE_ARMY) {
         moveSoldiers(state, move.s, move.d, move.c);
     } else if (moveType == BUILD_ACTION) {
-        console.log("You have chosen to build: ", move.u);
         buildUpgrade(state, move.r, move.u);
 	} else if (moveType == END_TURN) {
 		state.m.l = 0;
