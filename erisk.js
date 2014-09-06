@@ -1076,7 +1076,7 @@ function playOneMove(state) {
                 // yes, the game has ended
                 oneAtATime(150, updateDisplay.bind(0, newState));
                 showEndGame(newState);
-                oneAtATime(0, runSetupScreen);
+                return;
             } else {
                 // still more of the game to go - next move, please!
                 setTimeout(playOneMove.bind(0, newState), 1);
@@ -1273,12 +1273,23 @@ function determineGameWinner(state) {
 }
 
 function showEndGame(state) {
-    var winner = state.e;
-    if (winner != DRAW_GAME) {
-        showBanner(winner.d, winner.n + " wins the game!");
-    } else {
-        showBanner('#333', "The game ends in a draw!");
-    }
+    oneAtATime(1, function() {
+        var winner = state.e;
+        if (winner != DRAW_GAME) {
+            showBanner(winner.d, winner.n + " wins the game!");
+        } else {
+            showBanner('#333', "The game ends in a draw!");
+        }
+
+        $('tc').innerHTML = "Game complete";
+        $('in').innerHTML = div({c: 'ds'}, "Click the button bellow to start a new game.");
+        map(state.p, function(_, index) {
+            $('pl' + index).className = 'pl';
+        });
+        updateButtons([{t: "New game"}]);
+
+        uiCallbacks.b = runSetupScreen;
+    });
 }
 
 // ==========================================================
