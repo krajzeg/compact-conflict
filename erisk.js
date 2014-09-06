@@ -19,9 +19,9 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 
 // === Possible temple upgrades
 var UPGRADES = [
-    {n: "Soldier", d: "", c: range(10,100), x: []},
-    {n: "X of Water", d: "All region income X% higher.",
-        c: [15, 30, 45], x: [33, 66, 100],
+    {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n *2; }), x: []},
+    {n: "X of Water", d: "Income per turn X% higher.",
+        c: [15, 30, 45], x: [25, 50, 75],
         b: '#66f'},
     {n: "X of Earth", d: "Army X% better at defense.",
         c: [25, 50, 75], x: [15, 30, 50],
@@ -507,9 +507,12 @@ function uiPickMove(player, state, reportMoveCallback) {
 
     function makeUpgradeButtons(temple) {
         var upgradeButtons = map(UPGRADES, function(upgrade) {
-            var level = (temple.u == upgrade) ? (temple.l+1) : 0;
+            var templeOwner = owner(state, temple.r);
+            // current upgrade level (either the level of the temple or number of soldiers bought already)
+            var level = (temple.u == upgrade) ? (temple.l+1) : ((upgrade == SOLDIER) ? state.l[templeOwner.i] : 0);
+
             var cost = upgrade.c[level];
-            var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "$)");
+            var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "&#9829;)");
             var description = template(upgrade.d, upgrade.x[level]);
 
             return {t: text, d: description, o: cost > cash(state, player), h: level >= upgrade.c.length};
@@ -649,7 +652,7 @@ function updateDisplay(gameState) {
             var regions = regionCount(gameState, player);
             if (regions) {
                 $('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;'; // region count
-                $('pc' + index).innerHTML = gameState.c[player.i] + '$'; // cash on hand
+                $('pc' + index).innerHTML = gameState.c[player.i] + '&#9829;'; // cash on hand
             } else {
                 $('pr' + index).innerHTML = '&#9760;'; // skull and crossbones, you're dead
                 $('pc' + index).innerHTML = '';
@@ -729,7 +732,7 @@ function makeInitialState() {
 	var gameState = {
 		p: players,
 		r: regions,
-		o: {}, t: {}, s: {}, c: {},
+		o: {}, t: {}, s: {}, c: {}, l: {},
 		m: {t: 1, p: 0, m: MOVE_ARMY, l: movesPerTurn}
 	};
 	
@@ -755,7 +758,7 @@ function makeInitialState() {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = 600;
+			gameState.c[index] = gameState.l[index] = 0;
 		});
 
 		// pick three regions that are as far away as possible from each other
@@ -987,9 +990,7 @@ function heuristicForSinglePlayer(player, state, debug) {
 }
 
 function debug(region) {
-    var temple = displayedState.t[region.i];
-    if (temple)
-        console.log(temple);
+    console.log("INCOME:", income(displayedState, owner(displayedState, region)));
     return false;
 }
 
@@ -1039,7 +1040,8 @@ function copyState(state, simulatingPlayer) {
 		o: deepCopy(state.o, 1),
 		t: deepCopy(state.t, 2),
 		s: deepCopy(state.s, 3),
-		c: deepCopy(state.c, 1)
+		c: deepCopy(state.c, 1),
+        l: deepCopy(state.l, 1)
 		// and some others are completely omitted - namely 'd', the current 'move decision' partial state
 	};
 }
@@ -1140,13 +1142,17 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
                 }
             }
 
+            var defenderDamage = repeats - attackerDamage;
 			map(range(0,attackerDamage), function() { fromList.shift() });
-			map(range(0,repeats-attackerDamage), function() { toList.shift() });
+			map(range(0,defenderDamage), function() { toList.shift() });
 
-            if (toList.length) {
-                // if there are defenders left, nobody will move in
+            // money for the martyrs
+            if (toOwner)
+                state.c[toOwner.i] += defenderDamage * 4;
+
+            // if there are defenders left, nobody will move in
+            if (toList.length)
                 howMany = 0;
-            }
 		}
 	}
 
@@ -1172,7 +1178,8 @@ function buildUpgrade(state, region, upgrade) {
     var templeOwner = owner(state, region);
     if (upgrade == SOLDIER) {
         // soldiers work diferently
-        state.c[templeOwner.i] -= upgrade.c[0];
+        var soldierLevel = state.l[templeOwner.i]++;
+        state.c[templeOwner.i] -= upgrade.c[soldierLevel];
         return addSoldiers(state, region, 1);
     }
 
@@ -1227,6 +1234,8 @@ function soldierCount(state, region) {
 	return list ? list.length : 0;
 }
 
+/*
+// old income - 2 per region, each soldier not on temple 1 upkeep
 function income(state, player) {
     var incomePerRegion = 0.02 * (100 + upgradeLevel(state, player, WATER)),
         baseIncome = Math.ceil(regionCount(state, player) * incomePerRegion);
@@ -1234,6 +1243,17 @@ function income(state, player) {
         return ((owner(state, region) == player) && (!state.t[region.i])) ? soldierCount(state, region) : 0;
     });
     return baseIncome - upkeep;
+}
+*/
+
+// new income - 1 per region, 3 per believer on temple, 3 if somebody gets killed while defending
+function income(state, player) {
+    var fromRegions = regionCount(state, player);
+    var fromTemples = sum(temples(state,player), function(temple) {
+        return soldierCount(state, temple.r) * 3;
+    });
+    var multiplier = 1.0 + 0.01 * upgradeLevel(state, player, WATER);
+    return Math.ceil(multiplier * (fromRegions + fromTemples));
 }
 
 function regionHasActiveArmy(state, player, region) {
@@ -1247,6 +1267,15 @@ function regionCount(state, player) {
 			total++;
 	});
 	return total;
+}
+
+function temples(state, player) {
+    var temples = [];
+    forEachProperty(state.t, function(temple, regionIndex) {
+        if (state.o[regionIndex] == player)
+            temples.push(temple);
+    });
+    return temples;
 }
 
 function activePlayer(state) {
