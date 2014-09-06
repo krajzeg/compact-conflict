@@ -30,7 +30,7 @@ var UPGRADES = [
         c: [30, 60, 90], x: [15, 30, 50],
         b: '#f00'},
     {n: "X of Air",   d: "X additional move(s) per turn.",
-        c: [40, 80], x: [1,2],
+        c: [40, 80, 120], x: [1,2,3],
         b: '#fff'}
     ],
     LEVELS = ["Temple", "Cathedral", "House"],
@@ -363,12 +363,11 @@ function prepareDisplay(container, gameState) {
 				i: id,
 				c: 'o',
 				s: style
-			}, div({i: iid, c: 'i'}));
+			}, div({c: 'i'}, div({c: 'i'}, div({c: 'i'}, div({c: 'i'})))));
             container.insertAdjacentHTML('beforeend', templeHTML);
 
             // retrieve elements and bind callbacks
 			temple.e = $(''+id);
-			temple.i = $(''+iid);
             temple.e.onclick = invokeUICallback.bind(0, temple.r, 't');
 		});
 	}
@@ -566,7 +565,16 @@ function updateDisplay(gameState) {
 		region.e.style.fill = 'url(#' + gradientName + ')';
 	}
 	function updateTempleDisplay(temple) {
-		temple.e.style.background = temple.u ? temple.u.b : '#999';
+        var element = temple.e;
+
+        var templeLevels = temple.u ? (temple.l + 3) : 2;
+        while (element) {
+            element.style.display = (templeLevels > 0) ? 'block' : 'none';
+            element.style.background = temple.u ? temple.u.b : '#999';
+
+            templeLevels--;
+            element = element.firstChild;
+        }
 	}
 	function updateSoldierDisplay(region, soldier, index) {
 		// we're still alive, so no removing our <div>
