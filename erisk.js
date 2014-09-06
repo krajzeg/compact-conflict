@@ -1,5 +1,5 @@
 // ==========================================================
-// Game-wide constants
+// Map generation and rules constants
 // ==========================================================
 
 var mapWidth = 30, 
@@ -7,10 +7,10 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 22,
 	movesPerTurn = 3,
-	turnCount = 15;
+	turnCount = 1;
 
 // ==========================================================
-// Game-relevant constants
+// Game data
 // ==========================================================
 
 // === The possible move types
@@ -37,6 +37,9 @@ var UPGRADES = [
 
 // === Constants for setup screen
 var PLAYER_CPU = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
+
+// == Special "player" for singifying a draw game
+var DRAW_GAME = {};
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -618,7 +621,7 @@ function updateMapDisplay(gameState) {
     }
     function updateSoldierDisplay(region, soldier, index) {
         // we're still alive, so no removing our <div>
-        soldiersStillAlive.push(soldier.i);
+        soldiersStillAlive.push(soldier.i); // BUG: we're getting an 'undefined' in soldier here sometimes
 
         // find or create a <div> for showing the soldier
         var domElement = soldierDivsById[soldier.i];
@@ -1068,8 +1071,16 @@ function playOneMove(state) {
         pickMove(controllingPlayer, state, function(move) {
             // the move is chosen - update state to a new immutable copy
             var newState = makeMove(state, move);
-            // schedule next move
-            setTimeout(playOneMove.bind(0, newState), 1);
+            // did the game end?
+            if (newState.e) {
+                // yes, the game has ended
+                oneAtATime(150, updateDisplay.bind(0, newState));
+                showEndGame(newState);
+                oneAtATime(0, runSetupScreen);
+            } else {
+                // still more of the game to go - next move, please!
+                setTimeout(playOneMove.bind(0, newState), 1);
+            }
         });
 
         // update display before the move happens
@@ -1236,10 +1247,37 @@ function nextTurn(state) {
         state.m = {t: turnNumber, p: playerIndex, m: MOVE_ARMY, l: movesPerTurn + upgradeLevel(state, upcomingPlayer, AIR)};
     } while (!regionCount(state, upcomingPlayer));
 
+    // did the game end by any chance?
+    if (state.m.t > turnCount) {
+        // end the game!
+        state.m.t = turnCount;
+        state.e = determineGameWinner(state);
+        return;
+    }
+
     // if this is not simulated, we'd like a banner
     if (!state.a) {
-        /*oneAtATime(1000, updateDisplay.bind(0, state));
-        showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");*/
+        // update view and show next turn banner
+        oneAtATime(1000, updateDisplay.bind(0, state));
+        showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");
+    }
+}
+
+function determineGameWinner(state) {
+    var pointsFn = regionCount.bind(0, state);
+    var winner = max(state.p, pointsFn);
+    var otherPlayers = state.p.filter(function(player) { return player != winner; });
+    var runnerUp = max(otherPlayers, pointsFn);
+
+    return (pointsFn(winner) != pointsFn(runnerUp)) ? winner : DRAW_GAME;
+}
+
+function showEndGame(state) {
+    var winner = state.e;
+    if (winner != DRAW_GAME) {
+        showBanner(winner.d, winner.n + " wins the game!");
+    } else {
+        showBanner('#333', "The game ends in a draw!");
     }
 }
 
@@ -1252,21 +1290,10 @@ function soldierCount(state, region) {
 	return list ? list.length : 0;
 }
 
-/*
-// old income - 2 per region, each soldier not on temple 1 upkeep
 function income(state, player) {
-    var incomePerRegion = 0.02 * (100 + upgradeLevel(state, player, WATER)),
-        baseIncome = Math.ceil(regionCount(state, player) * incomePerRegion);
-    var upkeep = sum(state.r, function(region) {
-        return ((owner(state, region) == player) && (!state.t[region.i])) ? soldierCount(state, region) : 0;
-    });
-    return baseIncome - upkeep;
-}
-*/
-
-// new income - 1 per region, 3 per believer on temple, 3 if somebody gets killed while defending
-function income(state, player) {
+    // 1 faith per region
     var fromRegions = regionCount(state, player);
+    // 3 faith per each soldier at temple (too much?)
     var fromTemples = sum(temples(state,player), function(temple) {
         return soldierCount(state, temple.r) * 3;
     });
@@ -1366,11 +1393,12 @@ function prepareSetupUI() {
     }
 }
 
+var gameSetup = {
+    p: [PLAYER_HUMAN, PLAYER_HUMAN, PLAYER_OFF, PLAYER_OFF]
+};
 function runSetupScreen() {
     // generate initial setup and game state
-    var game, setup  = {
-        p: [PLAYER_HUMAN, PLAYER_CPU, PLAYER_CPU, PLAYER_OFF]
-    };
+    var game;
     regenerateMap();
 
     // prepare UI
@@ -1392,14 +1420,14 @@ function runSetupScreen() {
     // callback for player setup buttons
     uiCallbacks.sb = function(event) {
         // set the controller type for the player
-        setup.p[event.p] = event.b;
+        gameSetup.p[event.p] = event.b;
         updatePlayerButtons();
         updateBottomButtons();
         regenerateMap();
     };
 
     function setupValid() {
-        var enabledPlayers = sum(setup.p, function(playerState) {
+        var enabledPlayers = sum(gameSetup.p, function(playerState) {
             return (playerState != PLAYER_OFF) ? 1 : 0;
         });
         console.log(enabledPlayers);
@@ -1415,7 +1443,7 @@ function runSetupScreen() {
     }
 
     function updatePlayerButtons() {
-        map(setup.p, function(controller, playerIndex) {
+        map(gameSetup.p, function(controller, playerIndex) {
            map(range(0,3), function(buttonIndex) {
                $('sb' + playerIndex + buttonIndex).classList[(controller == buttonIndex) ? 'add' : 'remove']('sl');
            })
@@ -1424,7 +1452,7 @@ function runSetupScreen() {
 
     function regenerateMap() {
         if (setupValid()) {
-            game = makeInitialState(setup);
+            game = makeInitialState(gameSetup);
             showMap($('m'), game);
             updateMapDisplay(game);
         }
