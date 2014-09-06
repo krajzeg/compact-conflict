@@ -22,16 +22,16 @@ var UPGRADES = [
     {n: "Soldier", d: "", c: range(10,100), x: []},
     {n: "X of Water", d: "All region income X% higher.",
         c: [15, 30, 45], x: [33, 66, 100],
-        b: '#77f'},
+        b: '#66f'},
     {n: "X of Earth", d: "Army X% better at defense.",
         c: [25, 50, 75], x: [15, 30, 50],
-        b: '#763'},
+        b: '#696'},
     {n: "X of Fire",  d: "Army X% better at offense.",
         c: [30, 60, 90], x: [15, 30, 50],
-        b: '#f00'},
+        b: '#f88'},
     {n: "X of Air",   d: "X additional move(s) per turn.",
         c: [40, 80, 120], x: [1,2,3],
-        b: '#fff'}
+        b: '#ffa'}
     ],
     LEVELS = ["Temple", "Cathedral", "House"],
     SOLDIER = UPGRADES[0], WATER = UPGRADES[1], EARTH = UPGRADES[2], FIRE = UPGRADES[3], AIR = UPGRADES[4];
