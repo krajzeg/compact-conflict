@@ -341,6 +341,8 @@ function prepareDisplay(container, gameState) {
 
         region.e.oncontextmenu = debug.bind(0, region);
 	});
+    // clicking on non-active parts of screen is the same as clicking on a 'null' region
+    doc.body.onclick = invokeUICallback.bind(0, null, 'c');
 
 	makeTemples();
 	makeUI();
@@ -398,12 +400,12 @@ function prepareDisplay(container, gameState) {
 
 var uiCallbacks = {};
 
-function invokeUICallback(object, type) {
+function invokeUICallback(object, type, event) {
 	var cb = uiCallbacks[type];
 	if (cb) {
 		cb(object);
 	}
-
+    event.stopPropagation();
 	return false;
 }
 
@@ -418,30 +420,36 @@ function uiPickMove(player, state, reportMoveCallback) {
 	setCleanState();
 
 	uiCallbacks.c = function(region) {
-		var totalSoldiers = soldierCount(state, region);
-		if (!state.d.s) {
-			// no move in progress - start a new move if this is legal
+        if ((!region) || (state.d.t == BUILD_ACTION))
+            setCleanState();
+
+        if (!state.d.s && region) {
+            // no move in progress - start a new move if this is legal
             if (regionHasActiveArmy(state, player, region)) {
+                setCleanState();
                 state.d.t = MOVE_ARMY;
                 state.d.s = region;
-                state.d.c = totalSoldiers;
+                state.d.c = soldierCount(state, region);
                 state.d.b[0].h = 0;
                 state.d.h = region.n.concat(region);
             }
-		} else {
-			// we already have a move in progress
-			var decisionState = state.d;
-			// what region did we click?
-			if (region == decisionState.s) {
-				// the one we're moving an army from - tweak soldier count
-				decisionState.c = decisionState.c % totalSoldiers + 1;
-			} else if (decisionState.s.n.indexOf(region) > -1) {
-				// one of the neighbours - let's finalize the move
-				uiCallbacks = {};
-				decisionState.d = region;
-				return reportMoveCallback(decisionState);
-			}
-		}
+        } else if (region) {
+            // we already have a move in progress
+            var decisionState = state.d;
+            // what region did we click?
+            if (region == decisionState.s) {
+                // the one we're moving an army from - tweak soldier count
+                decisionState.c = decisionState.c % soldierCount(state, region) + 1;
+            } else if (decisionState.s.n.indexOf(region) > -1) {
+                // one of the neighbours - let's finalize the move
+                uiCallbacks = {};
+                decisionState.d = region;
+                return reportMoveCallback(decisionState);
+            } else {
+                // some random region - cancel move
+                setCleanState();
+            }
+        }
 		updateDisplay(state);
 	};
 
@@ -455,6 +463,17 @@ function uiPickMove(player, state, reportMoveCallback) {
             };
         }
         updateDisplay(state);
+    };
+
+    uiCallbacks.s = function(soldier) {
+        // delegate to the region click handler, after finding out which region it is
+        var soldierRegion = null;
+        map(state.r, function(region) {
+            if (contains(state.s[region.i], soldier))
+                soldierRegion = region;
+        });
+        if (soldierRegion)
+            uiCallbacks.c(soldierRegion);
     };
 
 	uiCallbacks.b = function(which) {
@@ -557,11 +576,13 @@ function updateDisplay(gameState) {
 	function updateRegionDisplay(region) {
 		var regionOwner = owner(gameState, region);
         var gradientName = (regionOwner ? 'p' + regionOwner.i : 'l');
-        var highlights = gameState.d && gameState.d.h || [];
-        if (highlights.indexOf(region) >= 0)
+        var highlighted = contains(gameState.d && gameState.d.h || [], region);
+
+        if (highlighted)
             gradientName += 'h';
 
 		region.e.style.fill = 'url(#' + gradientName + ')';
+        region.e.style.cursor = highlighted ? 'move' : 'default';
 	}
 	function updateTempleDisplay(temple) {
         var element = temple.e;
@@ -575,6 +596,10 @@ function updateDisplay(gameState) {
             templeLevels--;
             element = element.firstChild;
         }
+
+        // clickable?
+        var templeOwner = owner(gameState, temple.r);
+        temple.e.style.cursor = (templeOwner == activePlayer(gameState)) ? 'zoom-in' : 'default';
 
         // highlight?
         var selected = gameState.d && gameState.d.w == temple;
@@ -590,7 +615,8 @@ function updateDisplay(gameState) {
 			var html = div({c: 's'});
 			var container = $('m');
 			container.insertAdjacentHTML('beforeEnd', html);
-			domElement = soldierDivsById[soldier.i] = container.lastChild;			
+			domElement = soldierDivsById[soldier.i] = container.lastChild;
+            domElement.onclick = invokeUICallback.bind(0, soldier, 's');
 		}
 
 		// (re)calculate where the <div> should be
