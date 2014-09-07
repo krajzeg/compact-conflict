@@ -786,7 +786,7 @@ function makeInitialState(setup) {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = gameState.l[index] = 600;
+			gameState.c[index] = gameState.l[index] = 0;
 		});
 
 		// pick three regions that are as far away as possible from each other
