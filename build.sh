@@ -18,4 +18,4 @@ cd ..
 
 # Report
 FINAL_SIZE=$( wc -c "dist/$ZIP_FILE" | awk '{print $1}')
-echo "Final size: $FINAL_SIZE bytes"
+echo "Final size: \n\t\033[1m$FINAL_SIZE\033[0m bytes"
