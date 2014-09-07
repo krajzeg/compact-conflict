@@ -7,7 +7,7 @@ var mapWidth = 30,
 	maxRegionSize = 8,
 	neededRegions = 22,
 	movesPerTurn = 3,
-	turnCount = 1;
+	turnCount = 12;
 
 // ==========================================================
 // Game data
@@ -1110,6 +1110,14 @@ function afterMoveChecks(state) {
             }
         }
     });
+
+    // do we still have more than one player?
+    var gameStillOn = state.p.filter(regionCount.bind(0, state)).length > 1;
+    if (!gameStillOn) {
+        // oh gosh, it's done - by elimination!
+        state.e = determineGameWinner(state);
+        return;
+    }
 
     // moving to next turn
     if (!state.m.l)
