@@ -369,7 +369,7 @@ function showMap(container, gameState) {
         forEachProperty(gameState.t, function(temple, index) {
 
             var center = temple.r.c,
-                id = 'tp' + index, iid = 'ti' + index,
+                id = 'tp' + index,
                 style = 'left:' + (center[0]-1.5) + '%;top:' + (center[1]-4) + '%';
 
             // create the temple <div>s
@@ -853,8 +853,6 @@ function minMaxDoSomeWork(node) {
             m: move,
             s: childState, u: possibleMoves(childState)
         };
-        // work will resume inside the child
-        return child;
     }
 }
 
