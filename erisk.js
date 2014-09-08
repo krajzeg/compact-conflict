@@ -1137,7 +1137,7 @@ function addSoldiers(state, region, count) {
     });
 }
 
-function moveSoldiers(state, fromRegion, toRegion, howMany) {
+function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 	var fromList = state.s[fromRegion.i];
 	var toList = state.s[toRegion.i] || (state.s[toRegion.i] = []);
 	var fromOwner = owner(state, fromRegion);
@@ -1146,11 +1146,12 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 	// do we have a fight?
 	if (fromOwner != toOwner) {
 		// first, the attackers kill some defenders
-		var incomingStrength = howMany * (1 + upgradeLevel(state, fromOwner, FIRE) * 0.01);
-		var defendingStrength = toList.length * (1 + upgradeLevel(state, toOwner, EARTH) * 0.01);
+        var defendingSoldiers = toList.length;
+		var incomingStrength = incomingSoldiers * (1 + upgradeLevel(state, fromOwner, FIRE) * 0.01);
+        var defendingStrength = defendingSoldiers * (1 + upgradeLevel(state, toOwner, EARTH) * 0.01);
 
 		if (defendingStrength) {
-			var repeats = min([incomingStrength, defendingStrength]);
+			var repeats = min([incomingSoldiers, defendingSoldiers]);
 			var attackerWinChance = 100 * Math.pow(incomingStrength / defendingStrength, 1.6);
 			var attackerDamage = 0;
 
@@ -1182,13 +1183,13 @@ function moveSoldiers(state, fromRegion, toRegion, howMany) {
 
             // if there are defenders left, nobody will move in
             if (toList.length)
-                howMany = 0;
+                incomingSoldiers = 0;
 		}
 	}
 
-	if (howMany > 0) {
+	if (incomingSoldiers > 0) {
 		// move the (remaining) soldiers
-		map(range(0, howMany), function() {
+		map(range(0, incomingSoldiers), function() {
 			toList.push(fromList.shift());
 		});
 
