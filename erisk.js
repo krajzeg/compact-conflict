@@ -18,17 +18,17 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 var UPGRADES = [
     {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
     {n: "X of Water", d: "Income per turn X% higher.",
-        c: [15, 30, 45], x: [25, 50, 75],
+        c: [12, 20], x: [25, 50],
         b: '#66f'},
-    {n: "X of Earth", d: "Army X% better at defense.",
-        c: [25, 50, 75], x: [1, 2, 3],
-        b: '#696'},
-    {n: "X of Fire",  d: "Army X% better at offense.",
-        c: [30, 60, 90], x: [1, 2, 3],
+    {n: "X of Fire",  d: "Casualties are reduced by X on attack.",
+        c: [20, 20], x: [1, 2, 3],
         b: '#f88'},
     {n: "X of Air",   d: "X additional move(s) per turn.",
-        c: [40, 80, 120], x: [1,2,3],
-        b: '#ffa'}
+        c: [25, 25], x: [1, 2],
+        b: '#ffa'},
+    {n: "X of Earth", d: "Preemptively kill X invader(s) on defense.",
+        c: [30, 30], x: [1, 2, 3],
+        b: '#696'}
     ],
     LEVELS = ["Temple", "Cathedral", "House"],
     SOLDIER = UPGRADES[0], WATER = UPGRADES[1], EARTH = UPGRADES[2], FIRE = UPGRADES[3], AIR = UPGRADES[4];
@@ -816,8 +816,7 @@ function makeInitialState(setup) {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = 600;
-            gameState.l[index] = 0;
+			gameState.c[index] = gameState.l[index] = 0;
 		});
 
 		// pick three regions that are as far away as possible from each other
