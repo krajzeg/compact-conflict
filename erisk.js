@@ -180,21 +180,25 @@ function generateMap() {
 	var regionMap = range(0,mapWidth).map(function(){return []});
 	var regions = [], count = 0;
 
-	while(count < neededRegions) {
-		var bounds = {
-			l: rint(1, mapWidth-maxRegionSize+1),
-			t: rint(1, mapHeight-maxRegionSize+1),
-			w: rint(3, maxRegionSize), h: rint(3, maxRegionSize)
-		}; 
-		if (count && !overlaps(bounds)) continue;
-		
-		while(!shrink(bounds)) {
-			if (!overlaps(bounds)) {
-				regions.push(makeRegionAt(count++, bounds));
-				break;
-			}
-		}
-	}
+    do {
+        var retries = 3000;
+        while ((count < neededRegions) && (--retries > 0)) {
+            var bounds = {
+                l: rint(1, mapWidth - maxRegionSize + 1),
+                t: rint(1, mapHeight - maxRegionSize + 1),
+                w: rint(3, maxRegionSize), h: rint(3, maxRegionSize)
+            };
+            if (count && !overlaps(bounds)) continue;
+
+            while (!shrink(bounds)) {
+                if (!overlaps(bounds)) {
+                    regions.push(makeRegionAt(count++, bounds));
+                    break;
+                }
+            }
+        }
+        console.log(retries);
+    } while (!retries);
 
 	fillNeighbourLists();	
 	return regions;
@@ -249,8 +253,8 @@ function generateMap() {
 			var region = regionMap[x][y];
 			if (region) {
 				if (!region.n) region.n = [];
-				for2d(-1,-1,2,2,function(dx,dy) {
-					var potentialNeighbour = regionMap[x+dx][y+dy];
+				map([[-1,0],[1,0],[0,-1],[0,1]],function(d) {
+					var potentialNeighbour = regionMap[x+d[0]][y+d[1]];
 					if (potentialNeighbour && (potentialNeighbour != region) && (region.n.indexOf(potentialNeighbour) == -1))
 						region.n.push(potentialNeighbour);
 				});
@@ -1449,7 +1453,6 @@ function runSetupScreen() {
         var enabledPlayers = sum(gameSetup.p, function(playerState) {
             return (playerState != PLAYER_OFF) ? 1 : 0;
         });
-        console.log(enabledPlayers);
         return enabledPlayers > 1;
     }
 
