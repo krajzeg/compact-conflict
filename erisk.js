@@ -176,12 +176,11 @@ function template(text, replacement) {
 // ==========================================================
 
 function generateMap() {
-	var perturbConst = rint(0,100000);
-	var regionMap = range(0,mapWidth).map(function(){return []});
-	var regions = [], count = 0;
-
+	var perturbConst = rint(10000,100000);
+    var regionMap, regions, count, retries;
     do {
-        var retries = 3000;
+        regionMap = range(0,mapWidth).map(function(){return []});
+        regions = []; count = 0; retries = 2500;
         while ((count < neededRegions) && (--retries > 0)) {
             var bounds = {
                 l: rint(1, mapWidth - maxRegionSize + 1),
@@ -197,7 +196,6 @@ function generateMap() {
                 }
             }
         }
-        console.log(retries);
     } while (!retries);
 
 	fillNeighbourLists();	
@@ -243,7 +241,7 @@ function generateMap() {
 	}
 
 	function perturbedPoint(x,y) {
-		var angle = (sin(x*y*600+perturbConst*357)) * 6.28;
+		var angle = (sin(x*x*y*y*600+perturbConst*357)) * 6.28;
 		var dist = (sin(x*y*600+perturbConst*211)) / 2;
 		return [x+sin(angle)*dist, y+cos(angle)*dist];
 	}
