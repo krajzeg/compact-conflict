@@ -526,7 +526,6 @@ function uiPickMove(player, state, reportMoveCallback) {
 
     function makeUpgradeButtons(temple) {
         var upgradeButtons = map(UPGRADES, function(upgrade) {
-            var templeOwner = owner(state, temple.r);
             // current upgrade level (either the level of the temple or number of soldiers bought already)
             var level = (temple.u == upgrade) ? (temple.l+1) : ((upgrade == SOLDIER) ? (state.m.h || 0) : 0);
 
