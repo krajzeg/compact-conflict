@@ -4,8 +4,6 @@
 
 var mapWidth = 30, 
 	mapHeight = 20, 
-	maxRegionSize = 8,
-	neededRegions = 22,
 	movesPerTurn = 3,
 	turnCount = 12;
 
@@ -36,7 +34,7 @@ var UPGRADES = [
     SOLDIER = UPGRADES[0], WATER = UPGRADES[1], EARTH = UPGRADES[2], FIRE = UPGRADES[3], AIR = UPGRADES[4];
 
 // === Constants for setup screen
-var PLAYER_CPU = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
+var PLAYER_AI = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
 
 // == Special "player" for singifying a draw game
 var DRAW_GAME = {};
@@ -175,8 +173,10 @@ function template(text, replacement) {
 // prior to gameplay.
 // ==========================================================
 
-function generateMap() {
-	var perturbConst = rint(10000,100000);
+function generateMap(playerCount) {
+    var maxRegionSize = 11 - playerCount;
+    var neededRegions = 13 + playerCount * 3;
+    var perturbConst = rint(10000,100000);
     var regionMap, regions, count, retries;
     do {
         regionMap = range(0,mapWidth).map(function(){return []});
@@ -756,7 +756,7 @@ function makeInitialState(setup) {
         players.push(player);
     });
 
-	var regions = generateMap();
+	var regions = generateMap(players.length);
 	var gameState = {
 		p: players,
 		r: regions,
@@ -773,16 +773,22 @@ function makeInitialState(setup) {
     function distance(regionA, regionB) {
         // breadth-first search!
         var queue = [{r: regionA, d:0}], visited = [regionA], answer = -1, bound = 100;
+
         while (answer < 0) {
             var item = queue.shift(), region = item.r, distanceFromA = item.d;
             if (region == regionB) {
+                // we've found the region!
                 answer = distanceFromA;
             } else if (distanceFromA >= bound) {
+                // we've reached our established upper bound - return it
                 answer = bound;
             } else {
+                // use memoized values to establish an upper bound (we still might do better,
+                // but we can't do worse)
                 if (region.d[regionB.i])
-                    bound = distanceFromA + region.d[regionB.i];
+                    bound = min([bound, region.d[regionB.i] + distanceFromA]);
 
+                // look in all unvisited neighbours
                 map(region.n, function (neighbour) {
                     if (!contains(visited, neighbour))
                         queue.push({r: neighbour, d: distanceFromA + 1});
@@ -1427,7 +1433,7 @@ function prepareSetupUI() {
     });
 
     function playerButtons(playerIndex) {
-        return map(["CPU", "Human", "Off"], function(label, buttonIndex) {
+        return map(["AI", "Human", "Off"], function(label, buttonIndex) {
           var id = "sb" + playerIndex + buttonIndex;
           return elem('a', {i: id, c: 'rt', href: '#'}, label);
         }).join("");
