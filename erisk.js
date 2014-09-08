@@ -637,9 +637,12 @@ function updateMapDisplay(gameState) {
         // (re)calculate where the <div> should be
         var center = region.c;
         var totalSoldiers = soldierCount(gameState, region);
-        var offset = (-0.6 * totalSoldiers + index * 1.2);
-        domElement.style.left = (center[0]+offset-0.3) + '%';
-        domElement.style.top  = (center[1]+1.5+offset*0.2) + '%';
+
+        var columnWidth = min([totalSoldiers,5]);
+        var xOffset = (-0.6 * columnWidth + (index % 5) * 1.2);
+        var yOffset = Math.floor(index / 5) * 0.8;
+        domElement.style.left = (center[0] + xOffset - yOffset * 0.2 - 0.3) + '%';
+        domElement.style.top  = (center[1] + 1.5 + xOffset * 0.2 + yOffset) + '%';
 
         // selected?
         var decisionState = gameState.d || {};
@@ -813,7 +816,8 @@ function makeInitialState(setup) {
 	function setupTemples() {
 		// give the players some cash (or not)
 		map(players, function(player, index) {
-			gameState.c[index] = gameState.l[index] = 0;
+			gameState.c[index] = 600;
+            gameState.l[index] = 0;
 		});
 
 		// pick three regions that are as far away as possible from each other
