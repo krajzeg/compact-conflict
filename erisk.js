@@ -21,10 +21,10 @@ var UPGRADES = [
         c: [15, 30, 45], x: [25, 50, 75],
         b: '#66f'},
     {n: "X of Earth", d: "Army X% better at defense.",
-        c: [25, 50, 75], x: [15, 30, 50],
+        c: [25, 50, 75], x: [1, 2, 3],
         b: '#696'},
     {n: "X of Fire",  d: "Army X% better at offense.",
-        c: [30, 60, 90], x: [15, 30, 50],
+        c: [30, 60, 90], x: [1, 2, 3],
         b: '#f88'},
     {n: "X of Air",   d: "X additional move(s) per turn.",
         c: [40, 80, 120], x: [1,2,3],
@@ -718,7 +718,7 @@ function updateDisplay(gameState) {
 }
 
 function showBanner(background, text) {
-    oneAtATime(1850, function() {
+    /*oneAtATime(1850, function() {
         var banner = $('bn'), styles = banner.style;
 
         styles.background = background;
@@ -728,7 +728,7 @@ function showBanner(background, text) {
 
         setTimeout(function() { styles.opacity = 0.0; }, 800);
         setTimeout(function() { styles.display = 'none'; }, 1800);
-    });
+    });*/
 }
 
 function preserveAspect() {
@@ -1202,12 +1202,23 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
 	// do we have a fight?
 	if (fromOwner != toOwner) {
-		// first, the attackers kill some defenders
         var defendingSoldiers = toList.length;
-		var incomingStrength = incomingSoldiers * (1 + upgradeLevel(state, fromOwner, FIRE) * 0.01);
-        var defendingStrength = defendingSoldiers * (1 + upgradeLevel(state, toOwner, EARTH) * 0.01);
 
-		if (defendingStrength) {
+        // earth upgrade - preemptive damage on defense
+        var preemptiveDamage = min([incomingSoldiers, upgradeLevel(state, toOwner, EARTH)]);
+        console.log("Preemptive damage:", preemptiveDamage);
+        map(range(0, preemptiveDamage), function() {
+            fromList.shift();
+            incomingSoldiers--;
+        });
+
+        // if there is still defense and offense, let's have a fight
+		if (defendingSoldiers && incomingSoldiers) {
+            console.log("Incoming:", incomingSoldiers, "  Defending: ", defendingSoldiers);
+
+            var incomingStrength = incomingSoldiers * (1 + upgradeLevel(state, fromOwner, FIRE) * 0.01);
+            var defendingStrength = defendingSoldiers * (1 + upgradeLevel(state, toOwner, EARTH) * 0.01);
+
 			var repeats = min([incomingSoldiers, defendingSoldiers]);
 			var attackerWinChance = 100 * Math.pow(incomingStrength / defendingStrength, 1.6);
 			var attackerDamage = 0;
@@ -1231,8 +1242,14 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
             }
 
             var defenderDamage = repeats - attackerDamage;
-			map(range(0,attackerDamage), function() { fromList.shift() });
-			map(range(0,defenderDamage), function() { toList.shift() });
+
+            // reduced damage for fire upgrade
+            attackerDamage = max([0, attackerDamage - upgradeLevel(state, fromOwner, FIRE)]);
+
+            console.log("Attacker damage: ", attackerDamage, " Defender damage: ", defenderDamage);
+
+			map(range(0, attackerDamage), function() { fromList.shift() });
+			map(range(0, defenderDamage), function() { toList.shift() });
 
             // money for the martyrs
             if (toOwner)
