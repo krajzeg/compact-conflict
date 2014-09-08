@@ -18,7 +18,7 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 
 // === Possible temple upgrades
 var UPGRADES = [
-    {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n *2; }), x: []},
+    {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
     {n: "X of Water", d: "Income per turn X% higher.",
         c: [15, 30, 45], x: [25, 50, 75],
         b: '#66f'},
@@ -526,7 +526,7 @@ function uiPickMove(player, state, reportMoveCallback) {
         var upgradeButtons = map(UPGRADES, function(upgrade) {
             var templeOwner = owner(state, temple.r);
             // current upgrade level (either the level of the temple or number of soldiers bought already)
-            var level = (temple.u == upgrade) ? (temple.l+1) : ((upgrade == SOLDIER) ? state.l[templeOwner.i] : 0);
+            var level = (temple.u == upgrade) ? (temple.l+1) : ((upgrade == SOLDIER) ? (state.m.h || 0) : 0);
 
             var cost = upgrade.c[level];
             var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "&#9775;)");
@@ -1211,9 +1211,10 @@ function buildUpgrade(state, region, upgrade) {
     var temple = state.t[region.i];
     var templeOwner = owner(state, region);
     if (upgrade == SOLDIER) {
-        // soldiers work diferently
-        var soldierLevel = state.l[templeOwner.i]++;
-        state.c[templeOwner.i] -= upgrade.c[soldierLevel];
+        // soldiers work diferently - they get progressively more expensive the more you buy in one turn
+        if (!state.m.h)
+            state.m.h = 0;
+        state.c[templeOwner.i] -= upgrade.c[state.m.h++];
         return addSoldiers(state, region, 1);
     }
 
@@ -1310,9 +1311,9 @@ function soldierCount(state, region) {
 function income(state, player) {
     // 1 faith per region
     var fromRegions = regionCount(state, player);
-    // 3 faith per each soldier at temple (too much?)
+    // 1 faith per each soldier at temple (too much?)
     var fromTemples = sum(temples(state,player), function(temple) {
-        return soldierCount(state, temple.r) * 3;
+        return soldierCount(state, temple.r);
     });
     var multiplier = 1.0 + 0.01 * upgradeLevel(state, player, WATER);
     return Math.ceil(multiplier * (fromRegions + fromTemples));
