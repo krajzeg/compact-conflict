@@ -229,7 +229,7 @@ function generateMap() {
 			points[w+i] = perturbedPoint(l+w,t+i);
 			points[w+h+w+i] = perturbedPoint(l,t+h-i);
 		});
-		var region = {i: index, p: points};
+		var region = {i: index, p: points, d:[]};
 		
 		// mark it in the map
 		for2d(bounds.l, bounds.t, bounds.l + bounds.w, bounds.t + bounds.h, function(x,y){
@@ -769,12 +769,32 @@ function makeInitialState(setup) {
 	return gameState;
 
 
-	function distance(region1, region2) {
-		var c1 = centerOfWeight(region1.p), c2 = centerOfWeight(region2.p),
-			dx = c1[0]-c2[0],
-			dy = c1[1]-c2[1];
-		return Math.sqrt(dx*dx+dy*dy);
-	}
+
+    function distance(regionA, regionB) {
+        // breadth-first search!
+        var queue = [{r: regionA, d:0}], visited = [regionA], answer = -1, bound = 100;
+        while (answer < 0) {
+            var item = queue.shift(), region = item.r, distanceFromA = item.d;
+            if (region == regionB) {
+                answer = distanceFromA;
+            } else if (distanceFromA >= bound) {
+                answer = bound;
+            } else {
+                if (region.d[regionB.i])
+                    bound = distanceFromA + region.d[regionB.i];
+
+                map(region.n, function (neighbour) {
+                    if (!contains(visited, neighbour))
+                        queue.push({r: neighbour, d: distanceFromA + 1});
+                });
+                visited.push(region);
+            }
+        }
+
+        // memoize result for later and return
+        regionA.d[regionB.i] = regionB.d[regionA.i] = answer;
+        return answer;
+    }
 
 	function distanceScore(regions) {
 		return min(pairwise(regions, distance));
@@ -796,6 +816,7 @@ function makeInitialState(setup) {
 			return map(gameState.p, randomRegion);
 		});
 		var templeRegions = max(possibleSetups, distanceScore);
+        console.log(distanceScore(templeRegions));
 
 		// we have the regions, set up each player
 		map(players, function(player, index) {
