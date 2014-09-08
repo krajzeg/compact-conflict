@@ -821,12 +821,11 @@ function makeInitialState(setup) {
 		var possibleSetups = map(range(0,1000), function() {
 			return map(gameState.p, randomRegion);
 		});
-		var templeRegions = max(possibleSetups, distanceScore);
-        console.log(distanceScore(templeRegions));
+		var homes = max(possibleSetups, distanceScore);
 
 		// we have the regions, set up each player
 		map(players, function(player, index) {
-			var region = templeRegions[index];
+			var region = homes[index];
 			// make one of the regions your own
 			gameState.o[region.i] = player;
 			// put a temple and 3 soldiers in it
@@ -834,13 +833,39 @@ function makeInitialState(setup) {
 		});
 
 		// setup neutral temples
-		map(gameState.p, function() {
+        var distancesToTemples = map(homes, function() { return 0; });
+        var templeRegions = [];
+        var templeCount = [3,3,4][players.length-2];
+
+		map(range(0,templeCount), function() {
 			var bestRegion = max(gameState.r, function(region) {
-				return distanceScore(templeRegions.concat(region));
+				return templeScore(region);
 			});
-			putTemple(bestRegion, 3);
-			templeRegions.push(bestRegion);
+
+            putTemple(bestRegion, 3);
+
+            templeRegions.push(bestRegion);
+            distancesToTemples = updatedDistances(bestRegion);
 		});
+
+        function updatedDistances(newTemple) {
+            return map(homes, function(home, index) {
+                return distancesToTemples[index] + distance(home, newTemple);
+            });
+        }
+
+        function templeScore(newTemple) {
+            if (contains(templeRegions, newTemple))
+                return -100;
+
+            var updated = updatedDistances(newTemple);
+            var inequality = max(updated) - min(updated);
+            var templeDistances = distanceScore(templeRegions.concat(homes).concat(newTemple));
+            if (!templeDistances)
+                templeDistances = -5;
+
+            return templeDistances - inequality;
+        }
 	}
 
 	function putTemple(region, soldierCount) {
