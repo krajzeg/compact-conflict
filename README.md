@@ -1,9 +1,9 @@
 Compact Conflict
 ================
 
-You can [play it right here](http://krajzeg.github.io/compact-conflict) on Github.
+A minuscule risk-based strategy game created for [JS13k 2014](http://js13kgames.com/). Less than 13kB minified and zipped.
 
-A minuscule risk-based strategy game for [JS13k 2014](http://js13kgames.com/).
+You can **[play it right here](http://krajzeg.github.io/compact-conflict)** on Github.
 
 #### The code
 
