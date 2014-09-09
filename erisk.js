@@ -1064,6 +1064,14 @@ function debug(region) {
     return false;
 }
 
+function gimmeMoney() {
+    map(displayedState.p, function(_, index) {
+        console.log("Giving ply #", index, " 500 faith.");
+        displayedState.c[index] += 500;
+    });
+    updateDisplay(displayedState);
+}
+
 // ==========================================================
 // All the game logic and the machinery that runs its main
 // loop reside below.
@@ -1304,6 +1312,10 @@ function buildUpgrade(state, region, upgrade) {
 
     // you have to pay for it, unfortunately
     state.c[templeOwner.i] -= upgrade.c[temple.l];
+
+    // the AIR upgrade takes effect immediately
+    if (upgrade == AIR)
+        state.m.l++;
 }
 
 function nextTurn(state) {
