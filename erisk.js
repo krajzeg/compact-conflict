@@ -906,7 +906,7 @@ function aiPickMove(player, state, reportMoveCallback) {
 function minMaxDoSomeWork(node) {
     if (node.d == 0) {
         // terminal node, evaluate and return
-        node.v = heuristicPositionValueForPlayer(node.a, node.s);
+        node.v = heuristicForPlayer(node.a, node.s);
         return minMaxReturnFromChild(node.p, node);
     }
 
@@ -1012,10 +1012,6 @@ function possibleMoves(state) {
     return moves;
 }
 
-function heuristicPositionValueForPlayer(player, state) {
-    return heuristicForSinglePlayer(player, state);
-}
-
 function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
     var alpha = (state.m.t - dropOffTurn) / (turnCount - dropOffTurn);
     if (alpha < 0.0)
@@ -1023,9 +1019,10 @@ function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
     return (startOfGameValue + (endOfGameValue - startOfGameValue) * alpha);
 }
 
-function heuristicForSinglePlayer(player, state, debug) {
+function heuristicForPlayer(player, state, debug) {
     var templeBonus = slidingBonus(state, 8, 0, 1),
-        soldierBonus = slidingBonus(state, 0.33, 0, 10);
+        soldierBonus = slidingBonus(state, 0.33, 0, 10),
+        threatOpportunityMultiplier = slidingBonus(state, 1.0, 0.0, 10);
 
     function regionFullValue(region) {
         return 1 +
@@ -1038,7 +1035,7 @@ function heuristicForSinglePlayer(player, state, debug) {
             var nOwner = owner(state, neighbour);
             return (nOwner && (nOwner != player)) ? soldierCount(state, neighbour) : 0;
         });
-        return clamp((enemyPresence / (ourPresence+0.0001) - 1) * 0.5, 0, 0.75);
+        return clamp((enemyPresence / (ourPresence+0.0001) - 1) * 0.5, 0, 0.9);
     }
 
     function regionOpportunity(region) {
@@ -1050,7 +1047,7 @@ function heuristicForSinglePlayer(player, state, debug) {
         return sum(region.n, function(neighbour) {
             if (owner(state, neighbour) != player) {
                 var defendingSoldiers = soldierCount(state, neighbour);
-                return clamp((attackingSoldiers / (defendingSoldiers + 0.01) - 0.9) * regionFullValue(neighbour) * 0.5, 0, 0.5);
+                return clamp((attackingSoldiers / (defendingSoldiers + 0.01) - 0.9) * 0.5, 0, 0.5) * regionFullValue(neighbour);
             } else {
                 return 0;
             }
@@ -1061,8 +1058,9 @@ function heuristicForSinglePlayer(player, state, debug) {
         // count the value of the region itself
         var value = regionFullValue(region);
         // but reduce it by the threat other players pose to it (or increase by our threat to them)
-        return (1.0 - regionThreat(region)) * value +
-            regionOpportunity(region) +
+        return value +
+            (1.0 - regionThreat(region)) * threatOpportunityMultiplier * value +
+            regionOpportunity(region) * threatOpportunityMultiplier +
             soldierCount(state, region) * soldierBonus
     }
 
