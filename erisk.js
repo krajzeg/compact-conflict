@@ -666,6 +666,8 @@ function updateIngameUI(gameState) {
     var moveState = gameState.m;
     var decisionState = gameState.d;
     var buildingMode = decisionState && (decisionState.t == BUILD_ACTION);
+    var movingArmy = decisionState && decisionState.s;
+
     var active = activePlayer(gameState);
 
     // turn counter
@@ -689,7 +691,11 @@ function updateIngameUI(gameState) {
     if (active.u == uiPickMove) {
         if (buildingMode) {
             info = elem('p', {}, 'Upgrade your temple or make a new soldier.');
+        } else if (movingArmy) {
+            info = elem('p', {}, 'Click on a target region to move your army.') +
+                elem('p', {}, 'Click on the source region to choose how many to move.');
         } else {
+
             info = elem('p', {}, "Click on a region to move or attack with its army.") +
                 elem('p', {}, "Click on a temple to buy soldiers or upgrades with &#9775;.");
         }
