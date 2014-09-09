@@ -31,7 +31,7 @@ var UPGRADES = [
         b: '#696'}
     ],
     LEVELS = ["Temple", "Cathedral", "House"],
-    SOLDIER = UPGRADES[0], WATER = UPGRADES[1], EARTH = UPGRADES[2], FIRE = UPGRADES[3], AIR = UPGRADES[4];
+    SOLDIER = UPGRADES[0], WATER = UPGRADES[1], FIRE = UPGRADES[2], AIR = UPGRADES[3], EARTH = UPGRADES[4];
 
 // === Constants for setup screen
 var PLAYER_AI = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
