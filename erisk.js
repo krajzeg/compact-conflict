@@ -859,7 +859,7 @@ function makeInitialState(setup) {
 		// setup neutral temples
         var distancesToTemples = map(homes, function() { return 0; });
         var templeRegions = [];
-        var templeCount = [3,3,8][players.length-2];
+        var templeCount = [3,3,4][players.length-2];
 
 		map(range(0,templeCount), function() {
 			var bestRegion = max(gameState.r, function(region) {
