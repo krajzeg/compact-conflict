@@ -1,7 +1,9 @@
-compact-conflict
+Compact Conflict
 ================
 
 A minuscule risk-based strategy game for [JS13k 2014](http://js13kgames.com/).
+
+#### The code
 
 All the magic happens in `erisk.js` and `index.html`. 
 
