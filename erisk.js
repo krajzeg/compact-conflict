@@ -718,17 +718,18 @@ function updateDisplay(gameState) {
 }
 
 function showBanner(background, text) {
-    /*oneAtATime(1850, function() {
+    oneAtATime(1, function() {
         var banner = $('bn'), styles = banner.style;
 
         styles.background = background;
         styles.display = 'block';
-        styles.opacity = 1.0;
+        styles.opacity = 0.0;
         banner.innerHTML = text;
 
-        setTimeout(function() { styles.opacity = 0.0; }, 800);
-        setTimeout(function() { styles.display = 'none'; }, 1800);
-    });*/
+        setTimeout(function() { styles.opacity = 1.0; }, 1);
+        setTimeout(function() { styles.opacity = 0.0; }, 1000);
+        setTimeout(function() { styles.display = 'none'; }, 1500);
+    });
 }
 
 function preserveAspect() {
@@ -1363,8 +1364,7 @@ function nextTurn(state) {
 
     // if this is not simulated, we'd like a banner
     if (!state.a) {
-        // update view and show next turn banner
-        oneAtATime(1000, updateDisplay.bind(0, state));
+        // show next turn banner
         showBanner(activePlayer(state).d, activePlayer(state).n + "'s turn");
     }
 }
