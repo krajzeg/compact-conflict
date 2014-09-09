@@ -851,7 +851,7 @@ function makeInitialState(setup) {
 		// setup neutral temples
         var distancesToTemples = map(homes, function() { return 0; });
         var templeRegions = [];
-        var templeCount = [3,3,4][players.length-2];
+        var templeCount = [3,3,8][players.length-2];
 
 		map(range(0,templeCount), function() {
 			var bestRegion = max(gameState.r, function(region) {
@@ -1240,16 +1240,16 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
         // earth upgrade - preemptive damage on defense
         var preemptiveDamage = min([incomingSoldiers, upgradeLevel(state, toOwner, EARTH)]);
-        console.log("Preemptive damage:", preemptiveDamage);
-        map(range(0, preemptiveDamage), function() {
-            fromList.shift();
-            incomingSoldiers--;
-        });
+        if (preemptiveDamage) {
+            // apply it
+            map(range(0, preemptiveDamage), function () {
+                fromList.shift();
+                incomingSoldiers--;
+            });
+        }
 
         // if there is still defense and offense, let's have a fight
 		if (defendingSoldiers && incomingSoldiers) {
-            console.log("Incoming:", incomingSoldiers, "  Defending: ", defendingSoldiers);
-
             var incomingStrength = incomingSoldiers * (1 + upgradeLevel(state, fromOwner, FIRE) * 0.01);
             var defendingStrength = defendingSoldiers * (1 + upgradeLevel(state, toOwner, EARTH) * 0.01);
 
@@ -1283,7 +1283,9 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
             console.log("Attacker damage: ", attackerDamage, " Defender damage: ", defenderDamage);
 
 			map(range(0, attackerDamage), function() { fromList.shift() });
+            battleAnimationKeyframe(state);
 			map(range(0, defenderDamage), function() { toList.shift() });
+            battleAnimationKeyframe(state);
 
             // money for the martyrs
             if (toOwner)
@@ -1316,6 +1318,13 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 	// use up the move
     state.m.l--;
 }
+
+function battleAnimationKeyframe(state) {
+    if (state.a) return;
+    var keyframe = copyState(state);
+    oneAtATime(250, updateDisplay.bind(0, keyframe));
+}
+
 function buildUpgrade(state, region, upgrade) {
     var temple = state.t[region.i];
     var templeOwner = owner(state, region);
