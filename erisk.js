@@ -845,7 +845,7 @@ function makeInitialState(setup) {
 			// make one of the regions your own
 			gameState.o[region.i] = player;
 			// put a temple and 3 soldiers in it
-			putTemple(region, 1);
+			putTemple(region, 3);
 		});
 
 		// setup neutral temples
