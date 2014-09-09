@@ -1301,7 +1301,20 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 			var attackerWinChance = 100 * Math.pow(incomingStrength / defendingStrength, 1.6);
 			var attackerDamage = 0;
 
-			map(range(0,repeats), function(index) {
+            function randomNumberForFight(index) {
+                var maximum = 120 + attackerWinChance;
+                if (state.a) {
+                    // simulated fight - return some numbers
+                    // they're clustered about the center of the range to
+                    // make the AI more "decisive" (this exaggerates any advantages)
+                    return (index + 3) * maximum / (repeats + 5);
+                } else {
+                    // not a simulated fight - return a real random number
+                    return rint(0, maximum);
+                }
+            }
+
+            map(range(0,repeats), function(index) {
 				if (randomNumberForFight(index) <= 120)
                 {
                     // defender wins!
@@ -1317,19 +1330,6 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 }
                 battleAnimationKeyframe(state, 250);
 			});
-
-            function randomNumberForFight(index) {
-                var maximum = 120 + attackerWinChance;
-                if (state.a) {
-                    // simulated fight - return some numbers
-                    // they're clustered about the center of the range to
-                    // make the AI more "decisive" (this exaggerates any advantages)
-                    return (index + 3) * maximum / (repeats + 5);
-                } else {
-                    // not a simulated fight - return a real random number
-                    return rint(0, maximum);
-                }
-            }
 
             // reset "attacking status" on the soldiers - at this point they will
             // move back to the source region or occupy the destination
