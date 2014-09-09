@@ -644,7 +644,7 @@ function updateMapDisplay(gameState) {
         var xPosition = center[0] + xOffset - yOffset * 0.2 - 0.3;
         var yPosition = center[1] + 1.5 + xOffset * 0.2 + yOffset;
 
-        if (soldier.a && soldier.a != region) {
+        if (soldier.a) {
             // we're attacking right now - move us closer to target region
             var targetCenter = soldier.a.c;
             xPosition = (xPosition + targetCenter[0]) / 2;
@@ -1307,12 +1307,14 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 }
             }
 
-            // are there defenders left
+            // reset "attacking status" on the soldiers - at this point they will
+            // move back to the source region or occupy the destination
+            map(fromList.slice(0, incomingSoldiers), function(soldier) {
+                soldier.a = 0;
+            });
+
+            // are there defenders left?
             if (toList.length) {
-                // yes, reset "attacking status" on the soldiers to make them move back to source region
-                map(fromList.slice(0, incomingSoldiers), function(soldier) {
-                    soldier.a = 0;
-                });
                 // and prevent anybody from moving in
                 incomingSoldiers = 0;
             }
