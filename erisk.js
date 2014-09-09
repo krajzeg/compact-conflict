@@ -398,7 +398,7 @@ function prepareIngameUI(gameState) {
         var pid = player.i;
         return div({
             i: 'pl' + pid,
-            c: 'pli',
+            c: 'pl',
             style: 'background: ' + player.d
         }, player.n +
             div({c: 'ad', i: 'pr' + pid}) +
@@ -664,7 +664,7 @@ function updateIngameUI(gameState) {
 
     // player data
     map(gameState.p, function(player, index) {
-        $('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi'; // active or not?
+        //$('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi'; // active or not?
         var regions = regionCount(gameState, player);
         if (regions) {
             $('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;'; // region count
@@ -1404,9 +1404,6 @@ function showEndGame(state) {
 
         $('tc').innerHTML = "Game complete";
         $('in').innerHTML = div({c: 'ds'}, "Click the button bellow to start a new game.");
-        map(state.p, function(_, index) {
-            $('pl' + index).className = 'pl';
-        });
         updateButtons([{t: "New game"}]);
 
         uiCallbacks.b = runSetupScreen;
@@ -1502,7 +1499,7 @@ function prepareSetupUI() {
         var pid = player.i;
         return div({
                 i: 'pl' + pid,
-                c: 'pl ps',
+                c: 'pl',
                 style: 'background: ' + player.d
             }, player.n + playerButtons(pid)
         );
