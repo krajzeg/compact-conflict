@@ -641,8 +641,17 @@ function updateMapDisplay(gameState) {
         var columnWidth = min([totalSoldiers,5]);
         var xOffset = (-0.6 * columnWidth + (index % 5) * 1.2);
         var yOffset = Math.floor(index / 5) * 0.8;
-        domElement.style.left = (center[0] + xOffset - yOffset * 0.2 - 0.3) + '%';
-        domElement.style.top  = (center[1] + 1.5 + xOffset * 0.2 + yOffset) + '%';
+        var xPosition = center[0] + xOffset - yOffset * 0.2 - 0.3;
+        var yPosition = center[1] + 1.5 + xOffset * 0.2 + yOffset;
+
+        if (soldier.a && soldier.a != region) {
+            // we're attacking right now - move us closer to target region
+            var targetCenter = soldier.a.c;
+            xPosition = (xPosition + targetCenter[0]) / 2;
+            yPosition = (yPosition + targetCenter[1]) / 2;
+        }
+        domElement.style.left = xPosition + '%';
+        domElement.style.top  = yPosition + '%';
 
         // selected?
         var decisionState = gameState.d || {};
@@ -1240,12 +1249,23 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
         // earth upgrade - preemptive damage on defense
         var preemptiveDamage = min([incomingSoldiers, upgradeLevel(state, toOwner, EARTH)]);
+
+        if (preemptiveDamage || defendingSoldiers) {
+            // there will be a battle - move the soldiers halfway for animation
+            map(fromList.slice(0,incomingSoldiers), function(soldier) {
+                soldier.a = toRegion;
+            });
+            battleAnimationKeyframe(state);
+        }
+
         if (preemptiveDamage) {
             // apply it
             map(range(0, preemptiveDamage), function () {
                 fromList.shift();
                 incomingSoldiers--;
             });
+            // animate it
+            battleAnimationKeyframe(state);
         }
 
         // if there is still defense and offense, let's have a fight
@@ -1283,7 +1303,6 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
             console.log("Attacker damage: ", attackerDamage, " Defender damage: ", defenderDamage);
 
 			map(range(0, attackerDamage), function() { fromList.shift() });
-            battleAnimationKeyframe(state);
 			map(range(0, defenderDamage), function() { toList.shift() });
             battleAnimationKeyframe(state);
 
@@ -1292,8 +1311,14 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 state.c[toOwner.i] += defenderDamage * 4;
 
             // if there are defenders left, nobody will move in
-            if (toList.length)
+            if (toList.length) {
+                // reset "attacking status"
+                map(fromList.slice(0, incomingSoldiers), function(soldier) {
+                    soldier.a = 0;
+                });
+                // and nobody will move in
                 incomingSoldiers = 0;
+            }
 		}
 	}
 
@@ -1322,7 +1347,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 function battleAnimationKeyframe(state) {
     if (state.a) return;
     var keyframe = copyState(state);
-    oneAtATime(250, updateDisplay.bind(0, keyframe));
+    oneAtATime(500, updateDisplay.bind(0, keyframe));
 }
 
 function buildUpgrade(state, region, upgrade) {
