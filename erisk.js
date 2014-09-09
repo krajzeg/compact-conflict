@@ -884,7 +884,7 @@ function makeInitialState(setup) {
 
 function aiPickMove(player, state, reportMoveCallback) {
     // the AI only analyzes its own moves (threats are handled in heuristic)
-    var depth = state.m.l;
+    var depth = state.m.l || 1;
 
     // use a min-max search to find the best move looking a few steps forward
     performMinMax(player, state, depth, reportMoveCallback);
@@ -963,6 +963,10 @@ function possibleMoves(state) {
     // ending your turn is always an option
     var moves = [{t: END_TURN}];
     var player = activePlayer(state);
+
+    // are we out of move points?
+    if (!state.m.l)
+        return moves; // yup, just end of turn available
 
     function addArmyMove(source, dest, count) {
         // add the move to the list, if it doesn't qualify as an obviously stupid one
@@ -1077,15 +1081,27 @@ function gimmeMoney() {
 // loop reside below.
 // ==========================================================
 
+/**
+ * Asks the UI (for humans) or the AI (for CPU players) to pick
+ * the next move to make in the game. This happens asynchronously.
+ *
+ * @param player the player to move
+ * @param state the state in which to make the move
+ * @param reportMoveCallback should be called with the desired move as parameter once the decision is made
+ */
 function pickMove(player, state, reportMoveCallback) {
-    // dead players just skip their turns, cause they're DEAD
-    if (!regionCount(state,player))
-        return reportMoveCallback({t: END_TURN});
-
 	// delegate to whoever handles this player
     player.u(player, state, reportMoveCallback);
 }
 
+/**
+ * Takes an existing state and a move, and returns a new game state with the move
+ * already applied. The object returned is a copy and the original is left untouched.
+ *
+ * @param state an existing game state
+ * @param move the move to be applied by the active players
+ * @returns {GameState} the game state after this move
+ */
 function makeMove(state, move) {
 	state = copyState(state);
 	
@@ -1095,7 +1111,7 @@ function makeMove(state, move) {
     } else if (moveType == BUILD_ACTION) {
         buildUpgrade(state, move.r, move.u);
 	} else if (moveType == END_TURN) {
-		state.m.l = 0;
+		nextTurn(state);
 	}
 
     // updates that happen after each move (checking for players losing, etc.)
@@ -1104,9 +1120,6 @@ function makeMove(state, move) {
 	return state;
 }
 
-/**
- * Creates an independent copy of the game state, prior to modifying it.
- **/
 function copyState(state, simulatingPlayer) {
 	return {
 		// some things are constant and can be shallowly copied
@@ -1182,8 +1195,8 @@ function afterMoveChecks(state) {
     }
 
     // moving to next turn
-    if (!state.m.l)
-        nextTurn(state);
+    /*if (!state.m.l)
+        nextTurn(state);*/
 }
 
 var soldierCounter;
@@ -1406,7 +1419,7 @@ function income(state, player) {
 }
 
 function regionHasActiveArmy(state, player, region) {
-    return (owner(state, region) == player) && soldierCount(state, region) && (!contains(state.m.z, region));
+    return (state.m.l > 0) && (owner(state, region) == player) && soldierCount(state, region) && (!contains(state.m.z, region));
 }
 
 function regionCount(state, player) {
