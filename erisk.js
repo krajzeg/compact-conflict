@@ -168,6 +168,11 @@ function template(text, replacement) {
     return text.replace(/X/g, replacement);
 }
 
+function setTransform(elem, value) {
+    elem.style.transform = value;
+    elem.style['-webkit-transform'] = value;
+}
+
 // ==========================================================
 // This part of the code deals with procedural map generation
 // prior to gameplay.
@@ -756,8 +761,8 @@ function showBanner(background, text) {
 
         map(bannerTimeouts, clearTimeout);
         bannerTimeouts = [
-            setTimeout(function() { styles.display = 'block';  styles.transform = transform(-1.0); }, 1),
-            setTimeout(function() { styles.opacity = 1.0; styles.transform = transform(2.0); }, 10),
+            setTimeout(function() { styles.display = 'block'; setTransform(banner, transform(-1.0)); }, 1),
+            setTimeout(function() { styles.opacity = 1.0; setTransform(banner, transform(-1.0)); }, 10),
             setTimeout(function() { styles.opacity = 1.0; }, 510),
             setTimeout(function() { styles.opacity = 0.0; }, 1010),
             setTimeout(function() { styles.display = 'none'; }, 1510)
