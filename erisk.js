@@ -17,17 +17,17 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 // === Possible temple upgrades
 var UPGRADES = [
     {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
-    {n: "X of Water", d: "Income per turn X% higher.",
+    {n: "X of Water", d: "Income: X% more each turn.",
         c: [12, 20], x: [25, 50],
         b: '#66f'},
-    {n: "X of Fire",  d: "Casualties are reduced by X on attack.",
-        c: [20, 20], x: [1, 2, 3],
+    {n: "X of Fire",  d: "Attack: X invincible soldier(s).",
+        c: [20, 20], x: [1, 2],
         b: '#f88'},
-    {n: "X of Air",   d: "X additional move(s) per turn.",
+    {n: "X of Air",   d: "Move: X extra move(s) per turn.",
         c: [25, 25], x: [1, 2],
         b: '#ffa'},
-    {n: "X of Earth", d: "Preemptively kill X invader(s) on defense.",
-        c: [30, 30], x: [1, 2, 3],
+    {n: "X of Earth", d: "Defense: Always kill X invader(s).",
+        c: [30, 30], x: [1, 2],
         b: '#696'}
     ],
     LEVELS = ["Temple", "Cathedral", "House"],
@@ -706,7 +706,7 @@ function updateIngameUI(gameState) {
     $('in').style.background = active.d;
 
     // active player stats
-    $('mv').style.display = $('pd').style.display =  buildingMode ? 'none' : 'block';
+    $('pd').style.display =  buildingMode ? 'none' : 'block';
     $('mc').innerHTML = moveState.l;
     $('ft').innerHTML = gameState.c[active.i];
 
