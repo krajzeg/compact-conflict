@@ -1,4 +1,0 @@
-IDEAS:
-	- make $('a', '12') do querySelector('#a12')
-	- innerHTML setting into its own function
-	
