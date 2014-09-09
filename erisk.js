@@ -407,7 +407,7 @@ function prepareIngameUI(gameState) {
     }).join(''));
 
     // info box
-    html += div({c: 'sc', i: 'in'});
+    html += div({c: 'sc un ds', i: 'in'});
 
     // set it all
     $('d').innerHTML = html;
@@ -686,15 +686,23 @@ function updateIngameUI(gameState) {
 
     // move info
     var info;
-    if (buildingMode) {
-        info = 'What shall we build?' + div({c: 'ds'}, 'Money left: ' + gameState.c[active.i] + '$');
+    if (active.u == uiPickMove) {
+        if (buildingMode) {
+            info = elem('p', {}, 'Upgrade your temple or make a new soldier.');
+        } else {
+            info = elem('p', {}, "Click on a region to move or attack with its army.") +
+                elem('p', {}, "Click on a temple to buy soldiers or upgrades with &#9775;.");
+        }
     } else {
-        info = 'Move phase' + div({c: 'ds'}, 'Moves left: ' + moveState.l);
+        info = elem('p', {}, active.n + ' is taking her turn.');
     }
     $('in').innerHTML = info;
+    $('in').style.background = active.d;
 
-    // building mode
-    $('pd').style.display = buildingMode ? 'none' : 'block';
+    // active player stats
+    $('mv').style.display = $('pd').style.display =  buildingMode ? 'none' : 'block';
+    $('mc').innerHTML = moveState.l;
+    $('ft').innerHTML = gameState.c[active.i];
 
     // buttons
     updateButtons(decisionState && decisionState.b);

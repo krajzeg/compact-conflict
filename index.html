@@ -166,12 +166,54 @@
         a,.o,.i,.s,.pl,.pi {
             transition: all 0.15s ease-in-out;
         }
+        p {
+            margin: 0.4em 1em 0.4em 1em;
+        }
 
+        #mv {
+            text-align: center;
+            padding: 1em 0 1.5em 0;
+            font-size: 80%;
+            color: #777;
+            display: none;
+            font-weight: bold;
+        }
+        .bk {
+            float: left; width: 30%;
+            margin: 0 10%;
+        }
+        #mc, #ft {
+            font-size: 250%;
+            color: #eef;
+            text-shadow: 2px 2px #000;
+        }
+
+        #in {
+            font-size: 70%;
+            box-shadow: inset 4px 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid #000;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
 <div id='c'>
-	<div id='o'><div id='d'></div><div id='u'></div></div>
+	<div id='o'>
+        <div id='d'></div>
+
+        <div id='mv' class="sc">
+            <div class='bk'>
+                <div id="mc"></div>
+                <div>moves</div>
+            </div>
+            <div class='bk'>
+                <div id="ft"></div>
+                <div>faith</div>
+            </div>
+            <div style='clear:both;font-size:1px'></div>
+        </div>
+
+        <div id='u'></div></div>
 	<div id='m'></div>
     <div id='bn' style="display: none;"></div>
 </div>
