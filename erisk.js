@@ -775,17 +775,19 @@ function showBanner(background, text) {
 }
 
 function preserveAspect() {
-	var w = wnd.innerWidth, h = wnd.innerHeight, aspect = 1.65, px = 'px';
-	if (w / h > aspect) {
-		w = h * aspect;
-	} else {
-		h = w / aspect;
-	}
+    setTimeout(function() {
+        var w = wnd.innerWidth, h = wnd.innerHeight, aspect = 1.65, px = 'px';
+        if (w / h > aspect) {
+            w = h * aspect;
+        } else {
+            h = w / aspect;
+        }
 
-	var styles = $('c').style;
-	styles.width = w + px;
-	styles.height = h + px;
-	styles.fontSize = 0.025 * h + px;
+        var styles = $('c').style;
+        styles.width = w + px;
+        styles.height = h + px;
+        styles.fontSize = 0.025 * h + px;
+    }, 1);
 }
 
 // ==========================================================
