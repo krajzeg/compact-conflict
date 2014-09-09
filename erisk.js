@@ -737,7 +737,6 @@ function showBanner(background, text) {
 
         banner.innerHTML = text;
 
-        console.log(bannerTimeouts);
         map(bannerTimeouts, clearTimeout);
         bannerTimeouts = [
             setTimeout(function() { styles.display = 'block';  styles.transform = transform(-1.0); }, 1),
@@ -1249,6 +1248,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
         // earth upgrade - preemptive damage on defense
         var preemptiveDamage = min([incomingSoldiers, upgradeLevel(state, toOwner, EARTH)]);
+        var invincibility = upgradeLevel(state, fromOwner, FIRE);
 
         if (preemptiveDamage || defendingSoldiers) {
             // there will be a battle - move the soldiers halfway for animation
@@ -1279,7 +1279,19 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
 			map(range(0,repeats), function(index) {
 				if (randomNumberForFight(index) <= 120)
-					attackerDamage++;
+                {
+                    // defender wins!
+                    if (invincibility-- <= 0) {
+                        fromList.shift();
+                        incomingSoldiers--;
+                    }
+                } else {
+                    // attacker wins, kill defender and pay the martyr bonus
+                    toList.shift();
+                    if (toOwner)
+                        state.c[toOwner.i] += 4;
+                }
+                battleAnimationKeyframe(state, 250);
 			});
 
             function randomNumberForFight(index) {
@@ -1295,28 +1307,13 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 }
             }
 
-            var defenderDamage = repeats - attackerDamage;
-
-            // reduced damage for fire upgrade
-            attackerDamage = max([0, attackerDamage - upgradeLevel(state, fromOwner, FIRE)]);
-
-            console.log("Attacker damage: ", attackerDamage, " Defender damage: ", defenderDamage);
-
-			map(range(0, attackerDamage), function() { fromList.shift() });
-			map(range(0, defenderDamage), function() { toList.shift() });
-            battleAnimationKeyframe(state);
-
-            // money for the martyrs
-            if (toOwner)
-                state.c[toOwner.i] += defenderDamage * 4;
-
-            // if there are defenders left, nobody will move in
+            // are there defenders left
             if (toList.length) {
-                // reset "attacking status"
+                // yes, reset "attacking status" on the soldiers to make them move back to source region
                 map(fromList.slice(0, incomingSoldiers), function(soldier) {
                     soldier.a = 0;
                 });
-                // and nobody will move in
+                // and prevent anybody from moving in
                 incomingSoldiers = 0;
             }
 		}
@@ -1344,10 +1341,10 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
     state.m.l--;
 }
 
-function battleAnimationKeyframe(state) {
+function battleAnimationKeyframe(state, delay) {
     if (state.a) return;
     var keyframe = copyState(state);
-    oneAtATime(500, updateDisplay.bind(0, keyframe));
+    oneAtATime(delay || 500, updateDisplay.bind(0, keyframe));
 }
 
 function buildUpgrade(state, region, upgrade) {
