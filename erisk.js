@@ -411,6 +411,9 @@ function prepareIngameUI(gameState) {
 
     // set it all
     $('d').innerHTML = html;
+
+    // stat box
+    $('mv').style.display = 'block';
 }
 
 // ==========================================================
@@ -1553,6 +1556,9 @@ function prepareSetupUI() {
 
     // realize the UI
     $('d').innerHTML = html;
+
+    // stat box
+    $('mv').style.display = 'none';
 
     // setup callbacks for players
     for2d(0, 0, PLAYER_TEMPLATES.length, 3, function(playerIndex, buttonIndex) {
