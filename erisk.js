@@ -717,19 +717,31 @@ function updateDisplay(gameState) {
     updateIngameUI(gameState);
 }
 
+var bannerTimeouts = [];
 function showBanner(background, text) {
     oneAtATime(1, function() {
         var banner = $('bn'), styles = banner.style;
 
         styles.background = background;
-        styles.display = 'block';
+        styles.display = 'none';
         styles.opacity = 0.0;
+
         banner.innerHTML = text;
 
-        setTimeout(function() { styles.opacity = 1.0; }, 1);
-        setTimeout(function() { styles.opacity = 0.0; }, 1000);
-        setTimeout(function() { styles.display = 'none'; }, 1500);
+        console.log(bannerTimeouts);
+        map(bannerTimeouts, clearTimeout);
+        bannerTimeouts = [
+            setTimeout(function() { styles.display = 'block';  styles.transform = transform(-1.0); }, 1),
+            setTimeout(function() { styles.opacity = 1.0; styles.transform = transform(2.0); }, 10),
+            setTimeout(function() { styles.opacity = 1.0; }, 510),
+            setTimeout(function() { styles.opacity = 0.0; }, 1010),
+            setTimeout(function() { styles.display = 'none'; }, 1510)
+        ];
     });
+
+    function transform(offset) {
+        return "translate3d(1.2em," + offset + "em,0) rotateY(" + (10 + offset * 2) + "deg)";
+    }
 }
 
 function preserveAspect() {
@@ -833,7 +845,7 @@ function makeInitialState(setup) {
 			// make one of the regions your own
 			gameState.o[region.i] = player;
 			// put a temple and 3 soldiers in it
-			putTemple(region, 3);
+			putTemple(region, 1);
 		});
 
 		// setup neutral temples
@@ -1065,7 +1077,6 @@ function heuristicForSinglePlayer(player, state, debug) {
 }
 
 function debug(region) {
-    console.log("INCOME:", income(displayedState, owner(displayedState, region)));
     return false;
 }
 
@@ -1091,6 +1102,10 @@ function gimmeMoney() {
  * @param reportMoveCallback should be called with the desired move as parameter once the decision is made
  */
 function pickMove(player, state, reportMoveCallback) {
+    // automatically end the turn of dead players
+    if (!regionCount(state, player))
+        return reportMoveCallback({t: END_TURN});
+
 	// delegate to whoever handles this player
     player.u(player, state, reportMoveCallback);
 }
@@ -1181,7 +1196,7 @@ function afterMoveChecks(state) {
                 state.m.l = 0;
             // show the world the good (or bad) news
             if (!state.a) {
-                oneAtATime(150, updateDisplay.bind(0, state));
+                oneAtATime(1500, updateDisplay.bind(0, state));
                 showBanner('#222', player.n + " has been eliminated!");
             }
         }
