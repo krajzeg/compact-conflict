@@ -19,16 +19,16 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 var UPGRADES = [
     {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
     {n: "X of Water", d: "Income: X% more each turn.",
-        c: [12, 20], x: [25, 50],
+        c: [15, 25], x: [25, 50],
         b: '#66f'},
     {n: "X of Fire",  d: "Attack: X invincible soldier(s).",
-        c: [20, 20], x: [1, 2],
+        c: [20, 30], x: [1, 2],
         b: '#f88'},
     {n: "X of Air",   d: "Move: X extra move(s) per turn.",
-        c: [25, 25], x: [1, 2],
+        c: [25, 35], x: [1, 2],
         b: '#ffa'},
     {n: "X of Earth", d: "Defense: Always kill X invader(s).",
-        c: [30, 30], x: [1, 2],
+        c: [30, 45], x: [1, 2],
         b: '#696'},
     {n: "Rebuild temple", d: "Switch to a different upgrade.",
         c: [0], x: []}
@@ -839,7 +839,7 @@ function makeInitialState(setup) {
         // set up as AI/human
         player.u = (playerController == PLAYER_HUMAN) ? uiPickMove : aiPickMove;
         if (playerController == PLAYER_AI)
-            player.p = {s: 0.25}; // default AI personality for now
+            player.p = {s: 0.2, u: [WATER, WATER, EARTH]}; // default AI personality for now
 
         player.i = players.length;
         players.push(player);
@@ -972,6 +972,9 @@ function aiPickMove(player, state, reportMoveCallback) {
     // check for upgrade options first
     if (shouldBuildSoldier(player, state))
         return reportMoveCallback(buildSoldierAtBestTemple(player, state));
+    var upgrade = upgradeToBuild(player, state);
+    if (upgrade)
+        return reportMoveCallback(upgrade);
 
     // the AI only analyzes its own moves (threats are handled in heuristic)
     var depth = state.m.l || 1;
@@ -1000,6 +1003,32 @@ function shouldBuildSoldier(player, state) {
     console.log("Cost:", relativeCost, "Disparity:", forceDisparity, "Decision:", decisionFactor);
 
     return decisionFactor >= 0;
+}
+
+function upgradeToBuild(player, state) {
+    // do we still want something?
+    if (!player.p.u.length)
+        return;
+    var desire = player.p.u[0];
+    var currentLevel = rawUpgradeLevel(state, player, desire);
+    console.log("Desire:", desire.n, currentLevel);
+    // can we afford it?
+    console.log("Cash check: ", state.c[player.i], desire.c[currentLevel])
+    if (state.c[player.i] < desire.c[currentLevel])
+        return;
+
+    // do we have a place to build it?
+    var possibleUpgrades = temples(state, player).filter(function(temple) {
+        return ((!temple.u) && (!currentLevel)) || (temple.u == desire);
+    });
+    if (!possibleUpgrades.length)
+        return;
+
+    // build the upgrade!
+    console.log("Building upgrade!");
+    player.p.u.shift();
+    var temple = possibleUpgrades[0];
+    return {t: BUILD_ACTION, u: desire, w: temple, r: temple.r};
 }
 
 function buildSoldierAtBestTemple(player, state) {
@@ -1601,6 +1630,15 @@ function owner(state, region) {
 
 function cash(state, player) {
     return state.c[player.i];
+}
+
+function rawUpgradeLevel(state, player, upgradeType) {
+    return max(map(temples(state, player), function(temple) {
+        if (temple.u && temple.u == upgradeType)
+            return temple.l + 1;
+        else
+            return 0;
+    }).concat(0));
 }
 
 function upgradeLevel(state, player, upgradeType) {
