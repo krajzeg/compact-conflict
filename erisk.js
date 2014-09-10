@@ -190,6 +190,14 @@ function setTransform(elem, value) {
     elem.style['-webkit-transform'] = value;
 }
 
+function onClickOrTap(elem, fn) {
+    elem.onclick = fn;
+    elem.addEventListener('touchstart', function(event) {
+        event.preventDefault();
+        return fn(event);
+    });
+}
+
 // ==========================================================
 // This part of the code deals with procedural map generation
 // prior to gameplay.
@@ -376,15 +384,13 @@ function showMap(container, gameState) {
         region.c = projectPoint(centerOfWeight(region.p));
 
         region.hl = $('hl' + index);
-        region.hl.onclick = invokeUICallback.bind(0, region, 'c');
-        region.hl.onmouseover = invokeUICallback.bind(0, region, 'i');
-        region.hl.onmouseout = invokeUICallback.bind(0, region, 'o');
+        onClickOrTap(region.hl, invokeUICallback.bind(0, region, 'c'));
 
         region.e.oncontextmenu = debug.bind(0, region);
     });
 
     // additional callbacks for better UI
-    doc.body.onclick = invokeUICallback.bind(0, null, 'c');
+    onClickOrTap(doc.body, invokeUICallback.bind(0, null, 'c'));
 
     // make the temple <div>s
     makeTemples();
@@ -419,7 +425,7 @@ function showMap(container, gameState) {
 
             // retrieve elements and bind callbacks
             temple.e = $(''+id);
-            temple.e.onclick = invokeUICallback.bind(0, temple.r, 't');
+            onClickOrTap(temple.e, invokeUICallback.bind(0, temple.r, 't'));
         });
     }
 }
@@ -650,7 +656,7 @@ function updateMapDisplay(gameState) {
         }
         var highlightedOpacity = 0.08 + region.c[0] * 0.003;
         region.hl.style.opacity = highlighted ? highlightedOpacity : 0.0;
-        region.hl.style.cursor = highlighted ? 'move' : 'default';
+        region.hl.style.cursor = highlighted ? 'pointer' : 'default';
 
         region.e.style.fill = 'url(#' + gradientName + ')';
 
@@ -784,8 +790,9 @@ function updateButtons(buttons) {
 
         var buttonHTML = elem('a', {href: '#', i: id, c: button.o ? 'off' : ''}, buttonContents);
         $('u').insertAdjacentHTML('beforeend', buttonHTML);
-        if (!button.o)
-            $(id).onclick = invokeUICallback.bind(0, index, 'b');
+        if (!button.o) {
+            onClickOrTap($(id), invokeUICallback.bind(0, index, 'b'));
+        }
     });
 }
 
@@ -1131,7 +1138,6 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
             // cap thinking time
             var elapsedTime = now() - timeStart;
             if (elapsedTime > maximumAIThinkingTime) {
-                console.log("Thinking cap reached!");
                 currentNode = null;
             }
 
@@ -1737,7 +1743,7 @@ function prepareSetupUI() {
 
     // setup callbacks for players
     for2d(0, 0, PLAYER_TEMPLATES.length, 3, function(playerIndex, buttonIndex) {
-        $('sb' + playerIndex + buttonIndex).onclick = invokeUICallback.bind(0, {p: playerIndex, b: buttonIndex}, 'sb')
+        onClickOrTap($('sb' + playerIndex + buttonIndex), invokeUICallback.bind(0, {p: playerIndex, b: buttonIndex}, 'sb'));
     });
 
     function playerButtons(playerIndex) {
@@ -1820,7 +1826,7 @@ function runSetupScreen() {
 
 function setupTitleScreen() {
     $('o').style.display = 'block';
-    $('cb').onclick = setTitleScreenVisibility.bind(0,false);
+    onClickOrTap($('cb'), setTitleScreenVisibility.bind(0,false));
     setTimeout(setTitleScreenVisibility.bind(0,showTitleScreen), 10);
 }
 
