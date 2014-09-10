@@ -450,6 +450,7 @@ function invokeUICallback(object, type, event) {
 	return false;
 }
 
+var uiState = {};
 function uiPickMove(player, state, reportMoveCallback) {
 	var cleanState = {
 		b: [
@@ -457,8 +458,6 @@ function uiPickMove(player, state, reportMoveCallback) {
 			{t: 'End turn'}
 		]
 	};
-
-	setCleanState();
 
 	uiCallbacks.c = function(region) {
         if ((!region) || (state.d.t == BUILD_ACTION))
@@ -525,6 +524,10 @@ function uiPickMove(player, state, reportMoveCallback) {
             } else {
                 // build an upgrade!
                 state.d.u = UPGRADES[which];
+                // if its a soldier, store UI state so it can be kept after the move is made
+                if (state.d.u == SOLDIER)
+                    uiState[player.i] = state.d.r;
+                // report the move
                 reportMoveCallback(state.d);
             }
         } else {
@@ -540,7 +543,13 @@ function uiPickMove(player, state, reportMoveCallback) {
         }
 	};
 
-	function setCleanState() {
+    setCleanState();
+    if (uiState[player.i]) {
+        uiCallbacks.t(uiState[player.i]);
+        delete uiState[player.i];
+    }
+
+    function setCleanState() {
 		state.d = deepCopy(cleanState, 3);
         state.d.h = state.r.filter(regionHasActiveArmy.bind(0, state, player));
 		updateDisplay(state);
