@@ -674,8 +674,9 @@ function updateMapDisplay(gameState) {
         var totalSoldiers = soldierCount(gameState, region);
 
         var columnWidth = min([totalSoldiers,5]);
-        var xOffset = (-0.6 * columnWidth + (index % 5) * 1.2);
-        var yOffset = Math.floor(index / 5) * 0.8;
+        var x = index % 5, y = Math.floor(index / 5);
+        var xOffset = (-0.6 * columnWidth + x * 1.2);
+        var yOffset = y * 0.8;
         var xPosition = center[0] + xOffset - yOffset * 0.2 - 0.3;
         var yPosition = center[1] + 1.5 + xOffset * 0.2 + yOffset;
 
@@ -687,6 +688,7 @@ function updateMapDisplay(gameState) {
         }
         domElement.style.left = xPosition + '%';
         domElement.style.top  = yPosition + '%';
+        domElement.style.zIndex = 20 + y;
 
         // selected?
         var decisionState = gameState.d || {};
