@@ -1712,7 +1712,9 @@ function setTitleScreenVisibility(visible) {
 (wnd.onresize = preserveAspect)();
 
 // start the game
-!function() {
-    runSetupScreen();
-    setupTitleScreen();
-}();
+window.onload = function() {
+    setTimeout(function() {
+        runSetupScreen();
+        setupTitleScreen();
+    }, 500);
+};
