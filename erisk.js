@@ -1727,7 +1727,7 @@ function prepareSetupUI() {
 }
 
 var gameSetup = {
-    p: [PLAYER_HUMAN, PLAYER_HUMAN, PLAYER_OFF, PLAYER_OFF]
+    p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF]
 };
 function runSetupScreen() {
     // generate initial setup and game state
