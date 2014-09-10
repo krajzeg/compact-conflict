@@ -839,7 +839,7 @@ function makeInitialState(setup) {
         // set up as AI/human
         player.u = (playerController == PLAYER_HUMAN) ? uiPickMove : aiPickMove;
         if (playerController == PLAYER_AI)
-            player.p = {s: 0.2, u: [WATER, WATER, EARTH]}; // default AI personality for now
+            player.p = {s: 0.2, u: [WATER]}; // default AI personality for now
 
         player.i = players.length;
         players.push(player);
@@ -985,7 +985,8 @@ function aiPickMove(player, state, reportMoveCallback) {
 
 function shouldBuildSoldier(player, state) {
     // get preference for soldiers from our personality
-    var soldierPreference = player.p.s;
+    // if we don't want more upgrades, our preference becomes 1
+    var soldierPreference = player.p.u.length ? player.p.s : 1;
 
     // calculate the relative cost of buying a soldier now
     var relativeCost = soldierCost(state) / state.c[player.i];
