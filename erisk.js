@@ -1155,58 +1155,52 @@ function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
     return (startOfGameValue + (endOfGameValue - startOfGameValue) * alpha);
 }
 
-function heuristicForPlayer(player, state, debug) {
-    var templeBonus = slidingBonus(state, 8, 0, 1),
-        soldierBonus = slidingBonus(state, 0.33, 0, 10),
+function heuristicForPlayer(player, state) {
+    var soldierBonus = slidingBonus(state, 0.33, 0, 10),
         threatOpportunityMultiplier = slidingBonus(state, 1.0, 0.0, 10);
-
-    function regionFullValue(region) {
-        return 1 +
-            (state.t[region.i] ? templeBonus : 0);
-    }
-
-    function regionThreat(region) {
-        var ourPresence = soldierCount(state, region);
-        var enemyPresence = sum(region.n, function(neighbour) {
-            var nOwner = owner(state, neighbour);
-            return (nOwner && (nOwner != player)) ? soldierCount(state, neighbour) : 0;
-        });
-        return clamp((enemyPresence / (ourPresence+0.0001) - 1) * 0.5, 0, 0.9);
-    }
-
-    function regionOpportunity(region) {
-        // how much conquest does this region enable?
-        var attackingSoldiers = soldierCount(state, region);
-        if (!attackingSoldiers)
-            return 0;
-
-        return sum(region.n, function(neighbour) {
-            if (owner(state, neighbour) != player) {
-                var defendingSoldiers = soldierCount(state, neighbour);
-                return clamp((attackingSoldiers / (defendingSoldiers + 0.01) - 0.9) * 0.5, 0, 0.5) * regionFullValue(neighbour);
-            } else {
-                return 0;
-            }
-        });
-    }
 
     function adjustedRegionValue(region) {
         // count the value of the region itself
-        var value = regionFullValue(region);
+        var value = regionFullValue(state, region);
         // but reduce it by the threat other players pose to it (or increase by our threat to them)
         return value +
-            (1.0 - regionThreat(region)) * threatOpportunityMultiplier * value +
-            regionOpportunity(region) * threatOpportunityMultiplier +
+            (1.0 - regionThreat(state, player, region)) * threatOpportunityMultiplier * value +
+            regionOpportunity(state, player, region) * threatOpportunityMultiplier +
             soldierCount(state, region) * soldierBonus
-    }
-
-    if (debug) {
-        console.log("Opportunity value:", regionOpportunity(debug));
-        console.log("Adjusted RV: ", adjustedRegionValue(debug));
     }
 
     return sum(state.r, function (region) {
         return (owner(state, region) == player) ? adjustedRegionValue(region) : 0;
+    });
+}
+
+function regionFullValue(state, region) {
+    var templeBonus = slidingBonus(state, 8, 0, 1);
+    return 1 + (state.t[region.i] ? templeBonus : 0);
+}
+
+function regionThreat(state, player, region) {
+    var ourPresence = soldierCount(state, region);
+    var enemyPresence = sum(region.n, function(neighbour) {
+        var nOwner = owner(state, neighbour);
+        return (nOwner && (nOwner != player)) ? soldierCount(state, neighbour) : 0;
+    });
+    return clamp((enemyPresence / (ourPresence+0.0001) - 1) * 0.5, 0, 0.9);
+}
+
+function regionOpportunity(state, player, region) {
+    // how much conquest does this region enable?
+    var attackingSoldiers = soldierCount(state, region);
+    if (!attackingSoldiers)
+        return 0;
+
+    return sum(region.n, function(neighbour) {
+        if (owner(state, neighbour) != player) {
+            var defendingSoldiers = soldierCount(state, neighbour);
+            return clamp((attackingSoldiers / (defendingSoldiers + 0.01) - 0.9) * 0.5, 0, 0.5) * regionFullValue(state, neighbour);
+        } else {
+            return 0;
+        }
     });
 }
 
