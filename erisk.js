@@ -695,7 +695,7 @@ function updateMapDisplay(gameState) {
         }
         domElement.style.left = xPosition + '%';
         domElement.style.top  = yPosition + '%';
-        domElement.style.zIndex = 20 + y;
+        domElement.style.zIndex = 20 + y * 5 + x;
 
         // selected?
         var decisionState = gameState.d || {};
@@ -835,7 +835,12 @@ function makeInitialState(setup) {
     map(setup.p, function(playerController, playerIndex) {
         if (playerController == PLAYER_OFF) return;
         var player = deepCopy(PLAYER_TEMPLATES[playerIndex], 1);
+
+        // set up as AI/human
         player.u = (playerController == PLAYER_HUMAN) ? uiPickMove : aiPickMove;
+        if (playerController == PLAYER_AI)
+            player.p = {s: 0.25}; // default AI personality for now
+
         player.i = players.length;
         players.push(player);
     });
@@ -964,11 +969,44 @@ function makeInitialState(setup) {
 // ==========================================================
 
 function aiPickMove(player, state, reportMoveCallback) {
+    // check for upgrade options first
+    if (shouldBuildSoldier(player, state))
+        return reportMoveCallback(buildSoldierAtBestTemple(player, state));
+
     // the AI only analyzes its own moves (threats are handled in heuristic)
     var depth = state.m.l || 1;
 
     // use a min-max search to find the best move looking a few steps forward
     performMinMax(player, state, depth, reportMoveCallback);
+}
+
+function shouldBuildSoldier(player, state) {
+    // get preference for soldiers from our personality
+    var soldierPreference = player.p.s;
+
+    // calculate the relative cost of buying a soldier now
+    var relativeCost = soldierCost(state) / state.c[player.i];
+    if (relativeCost > 1)
+        return false;
+
+    // see how far behind on soldier number we are
+    var forces = map(state.p, totalSoldiers.bind(0,state));
+    var forceDisparity = max(forces) / totalSoldiers(state, player);
+
+    // this calculates whether we should build now - the further we are behind
+    // other players, the more likely we are to spend a big chunk of our cash
+    // on it
+    var decisionFactor = forceDisparity * soldierPreference - relativeCost;
+    console.log("Cost:", relativeCost, "Disparity:", forceDisparity, "Decision:", decisionFactor);
+
+    return decisionFactor >= 0;
+}
+
+function buildSoldierAtBestTemple(player, state) {
+    var temple = min(temples(state, player), function(_) {
+        return 1; // any temple for now;
+    });
+    return {t: BUILD_ACTION, u: SOLDIER, w: temple, r: temple.r};
 }
 
 function minMaxDoSomeWork(node) {
@@ -1312,9 +1350,11 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
         if (preemptiveDamage || defendingSoldiers) {
             // there will be a battle - move the soldiers halfway for animation
-            map(fromList.slice(0,incomingSoldiers), function(soldier) {
-                soldier.a = toRegion;
-            });
+            if (!state.a) {
+                map(fromList.slice(0, incomingSoldiers), function (soldier) {
+                    soldier.a = toRegion;
+                });
+            }
             battleAnimationKeyframe(state);
         }
 
@@ -1578,6 +1618,16 @@ function upgradeLevel(state, player, upgradeType) {
         // does it have the right type of upgrade?
         return (temple.u == upgradeType) ? upgradeType.x[temple.l] : 0;
     }));
+}
+
+function totalSoldiers(state, player) {
+    return sum(state.r, function(region) {
+        return (owner(state, region) == player) ? soldierCount(state, region) : 0;
+    });
+}
+
+function soldierCost(state) {
+    return SOLDIER.c[state.m.h || 0];
 }
 
 // ==========================================================
