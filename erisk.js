@@ -1025,17 +1025,23 @@ function upgradeToBuild(player, state) {
     if (!possibleUpgrades.length)
         return;
 
+    // pick the safest temple
+    var temple = min(possibleUpgrades, templeDangerousness.bind(0, state));
+
     // build the upgrade!
     console.log("Building upgrade!");
     player.p.u.shift();
-    var temple = possibleUpgrades[0];
     return {t: BUILD_ACTION, u: desire, w: temple, r: temple.r};
 }
 
+function templeDangerousness(state, temple) {
+    var templeOwner = owner(state, temple.r);
+    return regionThreat(state, templeOwner, temple.r) +
+           regionOpportunity(state, templeOwner, temple.r);
+}
+
 function buildSoldierAtBestTemple(player, state) {
-    var temple = min(temples(state, player), function(_) {
-        return 1; // any temple for now;
-    });
+    var temple = max(temples(state, player), templeDangerousness.bind(0, state));
     return {t: BUILD_ACTION, u: SOLDIER, w: temple, r: temple.r};
 }
 
