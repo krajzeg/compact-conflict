@@ -6,7 +6,7 @@ var mapWidth = 30,
 	mapHeight = 20, 
 	movesPerTurn = 3,
 	turnCount = 12,
-    showTitleScreen = true;
+    showTitleScreen = false;
 
 // ==========================================================
 // Game data
@@ -31,7 +31,7 @@ var UPGRADES = [
         c: [30, 30], x: [1, 2],
         b: '#696'}
     ],
-    LEVELS = ["Temple", "Cathedral", "House"],
+    LEVELS = ["Temple", "Cathedral"],
     SOLDIER = UPGRADES[0], WATER = UPGRADES[1], FIRE = UPGRADES[2], AIR = UPGRADES[3], EARTH = UPGRADES[4];
 
 // === Constants for setup screen
@@ -311,11 +311,14 @@ function makeGradient(id, light, dark) {
 	}, gradientStop(60, dark) + gradientStop(100, light));
 }
 
-function makePolygon(points, id, fill, noStroke) {
+function makePolygon(points, id, fill, stroke) {
+    stroke = stroke || "stroke:#000;stroke-width:0.25;";
+    fill = fill ? "url(#" + fill + ")" : 'transparent';
+
 	return elem('polygon', {
 		i: id,
 		points: map(points, projectPoint).join(' '),
-		s: 'fill:url(#' + fill + ');' + ((noStroke) ? '' : 'stroke:#000;stroke-width:0.25')
+		s: 'fill:' + fill + ";" + stroke + ';'
 	})
 }
 
@@ -337,13 +340,14 @@ function showMap(container, gameState) {
     var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
     var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
     var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
-    var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, true);
+    var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, ' ');
+    var highlighters = makeRegionPolys('hl', '', 0.95, 0.95, 0, 0, 'stroke:#fff;stroke-width:0.5;stroke-location:inside;opacity:0.0;');
 
     // replace the map container contents with the new map
     container.innerHTML = elem('svg', {
         viewbox: '0 0 100 100',
         preserveAspectRatio: 'none'
-    }, defs + ocean + shadows + bottoms + tops);
+    }, defs + ocean + shadows + bottoms + tops + highlighters);
 
     // clean some internal structures used to track HTML nodes
     soldierDivsById = {};
@@ -353,9 +357,10 @@ function showMap(container, gameState) {
         region.e = $('r' + index);
         region.c = projectPoint(centerOfWeight(region.p));
 
-        region.e.onclick = invokeUICallback.bind(0, region, 'c');
-        region.e.onmouseover = invokeUICallback.bind(0, region, 'i');
-        region.e.onmouseout = invokeUICallback.bind(0, region, 'o');
+        region.hl = $('hl' + index);
+        region.hl.onclick = invokeUICallback.bind(0, region, 'c');
+        region.hl.onmouseover = invokeUICallback.bind(0, region, 'i');
+        region.hl.onmouseout = invokeUICallback.bind(0, region, 'o');
 
         region.e.oncontextmenu = debug.bind(0, region);
     });
@@ -367,9 +372,9 @@ function showMap(container, gameState) {
     makeTemples();
 
 
-    function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, noStroke) {
+    function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, stroke, clip) {
         return elem('g', {}, map(regions, function(region, index) {
-            return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, noStroke);
+            return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, stroke, clip);
         }).join(''));
     }
 
@@ -602,8 +607,10 @@ function updateMapDisplay(gameState) {
         var gradientName = (regionOwner ? 'p' + regionOwner.i : 'l');
         var highlighted = contains(gameState.d && gameState.d.h || [], region);
 
-        if (highlighted)
+        if (highlighted) {
             gradientName += 'h';
+        }
+        $('hl' + region.i).style.opacity = highlighted ? 0.3 : 0.0;
 
         region.e.style.fill = 'url(#' + gradientName + ')';
         region.e.style.cursor = highlighted ? 'move' : 'default';
