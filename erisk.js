@@ -5,7 +5,8 @@
 var mapWidth = 30, 
 	mapHeight = 20, 
 	movesPerTurn = 3,
-	turnCount = 12;
+	turnCount = 12,
+    showTitleScreen = true;
 
 // ==========================================================
 // Game data
@@ -1648,6 +1649,21 @@ function runSetupScreen() {
 }
 
 // ==========================================================
+// This part of the code is responsible for the meager functionality
+// of the title screen.
+// ==========================================================
+
+function setupTitleScreen() {
+    $('o').style.display = 'block';
+    $('cb').onclick = setTitleScreenVisibility.bind(0,false);
+    setTimeout(setTitleScreenVisibility.bind(0,showTitleScreen), 10);
+}
+
+function setTitleScreenVisibility(visible) {
+    $('ts').classList[visible ? 'remove' : 'add']('h');
+}
+
+// ==========================================================
 // This part of the code initalizes a new game.
 // ==========================================================
 
@@ -1657,4 +1673,5 @@ function runSetupScreen() {
 // start the game
 !function() {
     runSetupScreen();
+    setupTitleScreen();
 }();

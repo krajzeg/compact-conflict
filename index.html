@@ -204,7 +204,7 @@
             top: 8%;
             right: 8%;
             bottom: 8%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             color: #aaa;
             font-size: 75%;
             line-height: 150%;
@@ -212,7 +212,21 @@
             border: 1px solid #333;
             perspective: 40em;
             perspective-origin: 50% 0;
+            transform: translate3d(0,0,0);
+            transition: all 0.5s;
+            opacity: 1.0;
         }
+        #ts.h {
+            transform: translate3d(0,0,0) rotateX(90deg);
+            opacity: 0.0;
+        }
+
+        .bb {
+            position: absolute;
+            left: 30%; right: 30%;
+            top: 90%;
+        }
+        .bb a:hover { transform: translate3d(0,0,0.2em); }
         h1 {
             font-family: "Constantia", "Athelas", serif;
             font-size: 5em;
@@ -239,7 +253,7 @@
 </head>
 <body>
 <div id='c'>
-	<div id='o'>
+	<div id='o' style='display: none'>
         <div id='d'></div>
 
         <div id='mv' class="sc">
@@ -258,7 +272,7 @@
 	<div id='m'></div>
     <div id='bn' style="display: none;"></div>
 
-    <div id='ts'>
+    <div id='ts' class='h'>
         <h1>Compact Conflict</h1>
 
         <p>The game lasts <b>12</b> turns. Once time runs out, the player <b>controlling the most regions</b> is declared the <b>winner</b>.</p>
@@ -300,6 +314,9 @@
             <li>If a temple is lost, the <b>upgrade is lost with it</b>.</li>
             <li>Instead of an upgrade, you can use faith to <b>recruit soldiers</b>. The more soldiers you recruit, the more expensive it gets.</li>
         </ul>
+        </div>
+        <div class='bb'>
+            <a id='cb' href='#'>Got it!</a>
         </div>
     </div>
 </div>
