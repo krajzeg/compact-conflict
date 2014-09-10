@@ -19,7 +19,7 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 var UPGRADES = [
     {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
     {n: "X of Water", d: "Income: X% more each turn.",
-        c: [15, 25], x: [25, 50],
+        c: [15, 25], x: [20, 40],
         b: '#66f'},
     {n: "X of Fire",  d: "Attack: X invincible soldier(s).",
         c: [20, 30], x: [1, 2],
@@ -41,6 +41,18 @@ var PLAYER_AI = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
 
 // == Special "player" for signifying a draw game
 var DRAW_GAME = {};
+
+// == AI personalities - how eagerly it builds soldiers, and what upgrades it prefers
+var AI_PERSONALITIES = [
+    {s: 1, u:[]},
+    {s: 0.2, u: [WATER, EARTH]},
+    {s: 0.25, u: [WATER, FIRE, FIRE]},
+    {s: 0.15, u: [WATER, WATER, EARTH, EARTH]},
+    {s: 0.4, u: [WATER]},
+    {s: 0.3, u: [WATER, WATER]},
+    {s: 0.25, u: [FIRE, FIRE]},
+    {s: 0.2, u: [EARTH, EARTH]}
+];
 
 // ==========================================================
 // Helper functions used for brevity or convenience.
@@ -838,8 +850,11 @@ function makeInitialState(setup) {
 
         // set up as AI/human
         player.u = (playerController == PLAYER_HUMAN) ? uiPickMove : aiPickMove;
-        if (playerController == PLAYER_AI)
-            player.p = {s: 0.2, u: [WATER]}; // default AI personality for now
+        // pick a random personality if we're AI
+        if (playerController == PLAYER_AI) {
+            player.p = deepCopy(AI_PERSONALITIES[rint(0, AI_PERSONALITIES.length)], 2);
+            console.log(player.p);
+        }
 
         player.i = players.length;
         players.push(player);
@@ -984,6 +999,10 @@ function aiPickMove(player, state, reportMoveCallback) {
 }
 
 function shouldBuildSoldier(player, state) {
+    // do we have a temple to build it in?
+    if (!temples(state, player).length)
+        return false;
+
     // get preference for soldiers from our personality
     // if we don't want more upgrades, our preference becomes 1
     var soldierPreference = player.p.u.length ? player.p.s : 1;
@@ -994,14 +1013,13 @@ function shouldBuildSoldier(player, state) {
         return false;
 
     // see how far behind on soldier number we are
-    var forces = map(state.p, totalSoldiers.bind(0,state));
-    var forceDisparity = max(forces) / totalSoldiers(state, player);
+    var forces = map(state.p, regionCount.bind(0,state));
+    var forceDisparity = max(forces) / regionCount(state, player);
 
     // this calculates whether we should build now - the further we are behind
     // other players, the more likely we are to spend a big chunk of our cash
     // on it
     var decisionFactor = forceDisparity * soldierPreference - relativeCost;
-    console.log("Cost:", relativeCost, "Disparity:", forceDisparity, "Decision:", decisionFactor);
 
     return decisionFactor >= 0;
 }
@@ -1012,9 +1030,7 @@ function upgradeToBuild(player, state) {
         return;
     var desire = player.p.u[0];
     var currentLevel = rawUpgradeLevel(state, player, desire);
-    console.log("Desire:", desire.n, currentLevel);
     // can we afford it?
-    console.log("Cash check: ", state.c[player.i], desire.c[currentLevel])
     if (state.c[player.i] < desire.c[currentLevel])
         return;
 
@@ -1029,7 +1045,6 @@ function upgradeToBuild(player, state) {
     var temple = min(possibleUpgrades, templeDangerousness.bind(0, state));
 
     // build the upgrade!
-    console.log("Building upgrade!");
     player.p.u.shift();
     return {t: BUILD_ACTION, u: desire, w: temple, r: temple.r};
 }
