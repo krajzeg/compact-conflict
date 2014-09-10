@@ -762,7 +762,7 @@ function showBanner(background, text) {
         map(bannerTimeouts, clearTimeout);
         bannerTimeouts = [
             setTimeout(function() { styles.display = 'block'; setTransform(banner, transform(-1.0)); }, 1),
-            setTimeout(function() { styles.opacity = 1.0; setTransform(banner, transform(-1.0)); }, 10),
+            setTimeout(function() { styles.opacity = 1.0; setTransform(banner, transform(1.0)); }, 10),
             setTimeout(function() { styles.opacity = 1.0; }, 510),
             setTimeout(function() { styles.opacity = 0.0; }, 1010),
             setTimeout(function() { styles.display = 'none'; }, 1510)
