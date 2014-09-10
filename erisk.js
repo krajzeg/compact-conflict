@@ -6,7 +6,9 @@ var mapWidth = 30,
 	mapHeight = 20, 
 	movesPerTurn = 3,
 	turnCount = 12,
-    showTitleScreen = true;
+    showTitleScreen = true,
+    minimumAIThinkingTime = 1000,
+    maximumAIThinkingTime = 5000;
 
 // ==========================================================
 // Game data
@@ -984,11 +986,17 @@ function makeInitialState(setup) {
 
 function aiPickMove(player, state, reportMoveCallback) {
     // check for upgrade options first
-    if (shouldBuildSoldier(player, state))
-        return reportMoveCallback(buildSoldierAtBestTemple(player, state));
+    // start with soldiers
+    if (shouldBuildSoldier(player, state)) {
+        var move = buildSoldierAtBestTemple(player, state);
+        return setTimeout(reportMoveCallback.bind(0,move), minimumAIThinkingTime);
+    }
+
+    // we don't need soldiers, maybe we can upgrade a temple?
     var upgrade = upgradeToBuild(player, state);
-    if (upgrade)
-        return reportMoveCallback(upgrade);
+    if (upgrade) {
+        return setTimeout(reportMoveCallback.bind(0, upgrade), minimumAIThinkingTime);
+    }
 
     // the AI only analyzes its own moves (threats are handled in heuristic)
     var depth = state.m.l || 1;
@@ -1109,7 +1117,7 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
         u: possibleMoves(fromState)
     };
     var currentNode = initialNode;
-    var unitOfWork = 100, minimumTime = 1000;
+    var unitOfWork = 100;
     var timeStart = now();
 
     setTimeout(doSomeWork, 1);
@@ -1117,12 +1125,26 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
     function doSomeWork() {
         var stepsRemaining = unitOfWork;
         while (stepsRemaining--) {
+            // do some thinking
             currentNode = minMaxDoSomeWork(currentNode);
+
+            // cap thinking time
+            var elapsedTime = now() - timeStart;
+            if (elapsedTime > maximumAIThinkingTime) {
+                console.log("Thinking cap reached!");
+                currentNode = null;
+            }
+
             if (!currentNode) {
                 // we're done, let's see what's the best move we found!
+                var bestMove = initialNode.b;
+                if (!bestMove) {
+                    bestMove = {t: END_TURN};
+                }
+
                 // perform the move (after a timeout if the minimal 'thinking time' wasn't reached
-                var elapsedTime = now() - timeStart;
-                setTimeout(moveCallback.bind(0,initialNode.b), max([minimumTime - elapsedTime, 1]));
+                // so that whatever the AI does is easy to understand
+                setTimeout(moveCallback.bind(0,initialNode.b), max([minimumAIThinkingTime - elapsedTime, 1]));
                 return;
             }
         }
