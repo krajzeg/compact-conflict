@@ -29,10 +29,12 @@ var UPGRADES = [
         b: '#ffa'},
     {n: "X of Earth", d: "Defense: Always kill X invader(s).",
         c: [30, 30], x: [1, 2],
-        b: '#696'}
+        b: '#696'},
+    {n: "Rebuild temple", d: "Switch to a different upgrade.",
+        c: [0], x: []}
     ],
     LEVELS = ["Temple", "Cathedral"],
-    SOLDIER = UPGRADES[0], WATER = UPGRADES[1], FIRE = UPGRADES[2], AIR = UPGRADES[3], EARTH = UPGRADES[4];
+    SOLDIER = UPGRADES[0], WATER = UPGRADES[1], FIRE = UPGRADES[2], AIR = UPGRADES[3], EARTH = UPGRADES[4], RESPEC = UPGRADES[5];
 
 // === Constants for setup screen
 var PLAYER_AI = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
@@ -564,7 +566,12 @@ function uiPickMove(player, state, reportMoveCallback) {
             var text = template(upgrade.n, LEVELS[level]) + elem('b', {}, " (" + cost + "&#9775;)");
             var description = template(upgrade.d, upgrade.x[level]);
 
-            return {t: text, d: description, o: cost > cash(state, player), h: level >= upgrade.c.length};
+            var hidden = false;
+            hidden = hidden || (upgrade == RESPEC && (!temple.u));
+            hidden = hidden || (temple.u && temple.u != upgrade && upgrade != SOLDIER && upgrade != RESPEC);
+            hidden = hidden || (level >= upgrade.c.length);
+
+            return {t: text, d: description, o: cost > cash(state, player), h: hidden};
         });
         upgradeButtons.push({t: "Done"});
         return upgradeButtons;
@@ -1405,12 +1412,18 @@ function battleAnimationKeyframe(state, delay) {
 function buildUpgrade(state, region, upgrade) {
     var temple = state.t[region.i];
     var templeOwner = owner(state, region);
+
     if (upgrade == SOLDIER) {
         // soldiers work diferently - they get progressively more expensive the more you buy in one turn
         if (!state.m.h)
             state.m.h = 0;
         state.c[templeOwner.i] -= upgrade.c[state.m.h++];
         return addSoldiers(state, region, 1);
+    }
+    if (upgrade == RESPEC) {
+        // respeccing is also different
+        delete temple.u;
+        return;
     }
 
     // upgrade the temple
