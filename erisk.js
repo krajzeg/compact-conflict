@@ -6,7 +6,7 @@ var mapWidth = 30,
 	mapHeight = 20, 
 	movesPerTurn = 3,
 	turnCount = 12,
-    showTitleScreen = false;
+    showTitleScreen = true;
 
 // ==========================================================
 // Game data
