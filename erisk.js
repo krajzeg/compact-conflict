@@ -40,6 +40,7 @@ var UPGRADES = [
 
 // === Constants for setup screen
 var PLAYER_AI = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
+var AI_EASY = 0, AI_NORMAL = 1, AI_UNFAIR = 2;
 
 // == Special "player" for signifying a draw game
 var DRAW_GAME = {};
@@ -1734,6 +1735,7 @@ function prepareSetupUI() {
         );
     }).join("");
     html += div({i: 'pd', c: 'sc un'}, playerBoxes);
+    html += div({c: 'sc ds', s: 'padding-right: 0.5em'}, "AI level" + aiButtons());
 
     // realize the UI
     $('d').innerHTML = html;
@@ -1745,7 +1747,16 @@ function prepareSetupUI() {
     for2d(0, 0, PLAYER_TEMPLATES.length, 3, function(playerIndex, buttonIndex) {
         onClickOrTap($('sb' + playerIndex + buttonIndex), invokeUICallback.bind(0, {p: playerIndex, b: buttonIndex}, 'sb'));
     });
+    map(range(0,3), function(index) {
+        onClickOrTap($('ai' + index), invokeUICallback.bind(0, index, 'ai'));
+    });
 
+    function aiButtons() {
+        return map(["Unfair", "Normal", "Easy"], function(level, index) {
+            var id = "ai" + (2-index);
+            return elem('a', {i: id, c: 'rt', href: '#', s: 'font-size: 90%'}, level);
+        }).join("");
+    }
     function playerButtons(playerIndex) {
         return map(["AI", "Human", "Off"], function(label, buttonIndex) {
           var id = "sb" + playerIndex + buttonIndex;
@@ -1755,7 +1766,8 @@ function prepareSetupUI() {
 }
 
 var gameSetup = {
-    p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF]
+    p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF],
+    l: AI_EASY
 };
 function runSetupScreen() {
     // generate initial setup and game state
@@ -1765,7 +1777,7 @@ function runSetupScreen() {
     // prepare UI
     prepareSetupUI();
     updateBottomButtons();
-    updatePlayerButtons();
+    updateConfigButtons();
 
     // callback for the buttons on the bottom
     uiCallbacks.b = function(which) {
@@ -1782,9 +1794,14 @@ function runSetupScreen() {
     uiCallbacks.sb = function(event) {
         // set the controller type for the player
         gameSetup.p[event.p] = event.b;
-        updatePlayerButtons();
+        updateConfigButtons();
         updateBottomButtons();
         regenerateMap();
+    };
+    // callback for AI level
+    uiCallbacks.ai = function(aiLevel) {
+        gameSetup.l = aiLevel;
+        updateConfigButtons();
     };
 
     function setupValid() {
@@ -1802,11 +1819,14 @@ function runSetupScreen() {
         ]);
     }
 
-    function updatePlayerButtons() {
+    function updateConfigButtons() {
         map(gameSetup.p, function(controller, playerIndex) {
            map(range(0,3), function(buttonIndex) {
                $('sb' + playerIndex + buttonIndex).classList[(controller == buttonIndex) ? 'add' : 'remove']('sl');
            })
+        });
+        map(range(0,3), function(index) {
+           $('ai' + index).classList[(index == gameSetup.l) ? 'add' : 'remove']('sl');
         });
     }
 
