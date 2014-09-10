@@ -343,7 +343,7 @@ function showMap(container, gameState) {
     var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
     var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
     var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, ' ');
-    var highlighters = makeRegionPolys('hl', '', 1, 1, 0, 0, 'stroke:#fff;stroke-width:2;opacity:0.0;', 'clip');
+    var highlighters = makeRegionPolys('hl', '', 1, 1, 0, 0, 'stroke:#fff;stroke-width:1.5;opacity:0.0;', 'clip');
 
     // replace the map container contents with the new map
     container.innerHTML = elem('svg', {
@@ -618,7 +618,8 @@ function updateMapDisplay(gameState) {
         if (highlighted) {
             gradientName += 'h';
         }
-        region.hl.style.opacity = highlighted ? 0.2 : 0.0;
+        var highlightedOpacity = 0.08 + region.c[0] * 0.003;
+        region.hl.style.opacity = highlighted ? highlightedOpacity : 0.0;
         region.hl.style.cursor = highlighted ? 'move' : 'default';
 
         region.e.style.fill = 'url(#' + gradientName + ')';
