@@ -566,7 +566,7 @@ function uiPickMove(player, state, reportMoveCallback) {
 
             return {t: text, d: description, o: cost > cash(state, player), h: level >= upgrade.c.length};
         });
-        upgradeButtons.push({t: "Cancel"});
+        upgradeButtons.push({t: "Done"});
         return upgradeButtons;
     }
 }
