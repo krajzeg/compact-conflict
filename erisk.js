@@ -311,14 +311,15 @@ function makeGradient(id, light, dark) {
 	}, gradientStop(60, dark) + gradientStop(100, light));
 }
 
-function makePolygon(points, id, fill, stroke) {
+function makePolygon(points, id, fill, stroke, clip) {
     stroke = stroke || "stroke:#000;stroke-width:0.25;";
     fill = fill ? "url(#" + fill + ")" : 'transparent';
 
 	return elem('polygon', {
 		i: id,
 		points: map(points, projectPoint).join(' '),
-		s: 'fill:' + fill + ";" + stroke + ';'
+		s: 'fill:' + fill + ";" + stroke + ';',
+        'clip-path': clip
 	})
 }
 
@@ -327,8 +328,9 @@ function showMap(container, gameState) {
 
     // define gradients for rendering
     var defs = elem('defs', {},
+            makeClipPaths() +
             makeGradient('b', '#88f', '#113') +
-            makeGradient('l', '#fc9', '#530') +
+            makeGradient('l', '#fb8', '#530') +
             makeGradient('lh', '#fea', '#742') +
             makeGradient('d', '#210', '#000') +
             makeGradient('w', '#55f', '#003') +
@@ -341,7 +343,7 @@ function showMap(container, gameState) {
     var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
     var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
     var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, ' ');
-    var highlighters = makeRegionPolys('hl', '', 0.95, 0.95, 0, 0, 'stroke:#fff;stroke-width:0.5;stroke-location:inside;opacity:0.0;');
+    var highlighters = makeRegionPolys('hl', '', 1, 1, 0, 0, 'stroke:#fff;stroke-width:2;opacity:0.0;', 'clip');
 
     // replace the map container contents with the new map
     container.innerHTML = elem('svg', {
@@ -372,9 +374,15 @@ function showMap(container, gameState) {
     makeTemples();
 
 
+    function makeClipPaths() {
+        return map(regions, function(region, index) {
+            return elem('clipPath', {i: 'clip' + index}, makePolygon(region.p, 'cp' + index, 'l', ''));
+        }).join('');
+    }
+
     function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, stroke, clip) {
         return elem('g', {}, map(regions, function(region, index) {
-            return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, stroke, clip);
+            return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, stroke, clip ? 'url(#' + clip + index + ')' : '');
         }).join(''));
     }
 
@@ -610,10 +618,11 @@ function updateMapDisplay(gameState) {
         if (highlighted) {
             gradientName += 'h';
         }
-        $('hl' + region.i).style.opacity = highlighted ? 0.3 : 0.0;
+        region.hl.style.opacity = highlighted ? 0.2 : 0.0;
+        region.hl.style.cursor = highlighted ? 'move' : 'default';
 
         region.e.style.fill = 'url(#' + gradientName + ')';
-        region.e.style.cursor = highlighted ? 'move' : 'default';
+
     }
     function updateTempleDisplay(temple) {
         var element = temple.e;
@@ -1551,7 +1560,7 @@ function upgradeLevel(state, player, upgradeType) {
 // ==========================================================
 
 var PLAYER_TEMPLATES = [
-    {i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#fff', hd:'#a80'},
+    {i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#ffa', hd:'#a80'},
     {i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
     {i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
     {i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
