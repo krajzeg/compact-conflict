@@ -1831,7 +1831,16 @@ function setupTitleScreen() {
 }
 
 function setTitleScreenVisibility(visible) {
+    if (visible) {
+        $('ts').style.display = 'block';
+    }
+
     $('ts').classList[visible ? 'remove' : 'add']('h');
+    if (!visible) {
+        setTimeout(function () {
+            $('ts').style.display = 'none';
+        }, 500);
+    }
 }
 
 // ==========================================================
