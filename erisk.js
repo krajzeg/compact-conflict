@@ -853,7 +853,6 @@ function makeInitialState(setup) {
         // pick a random personality if we're AI
         if (playerController == PLAYER_AI) {
             player.p = deepCopy(AI_PERSONALITIES[rint(0, AI_PERSONALITIES.length)], 2);
-            console.log(player.p);
         }
 
         player.i = players.length;
@@ -1013,8 +1012,8 @@ function shouldBuildSoldier(player, state) {
         return false;
 
     // see how far behind on soldier number we are
-    var forces = map(state.p, regionCount.bind(0,state));
-    var forceDisparity = max(forces) / regionCount(state, player);
+    var forces = map(state.p, force.bind(0,state));
+    var forceDisparity = max(forces) / force(state, player);
 
     // this calculates whether we should build now - the further we are behind
     // other players, the more likely we are to spend a big chunk of our cash
@@ -1022,6 +1021,10 @@ function shouldBuildSoldier(player, state) {
     var decisionFactor = forceDisparity * soldierPreference - relativeCost;
 
     return decisionFactor >= 0;
+}
+
+function force(state, player) {
+    return regionCount(state, player) * 2 + totalSoldiers(state, player);
 }
 
 function upgradeToBuild(player, state) {
@@ -1231,7 +1234,6 @@ function debug(region) {
 
 function gimmeMoney() {
     map(displayedState.p, function(_, index) {
-        console.log("Giving ply #", index, " 500 faith.");
         displayedState.c[index] += 500;
     });
     updateDisplay(displayedState);
@@ -1358,10 +1360,6 @@ function afterMoveChecks(state) {
         state.e = determineGameWinner(state);
         return;
     }
-
-    // moving to next turn
-    /*if (!state.m.l)
-        nextTurn(state);*/
 }
 
 var soldierCounter;
