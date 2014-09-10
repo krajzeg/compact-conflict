@@ -37,7 +37,7 @@ var UPGRADES = [
 // === Constants for setup screen
 var PLAYER_AI = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
 
-// == Special "player" for singifying a draw game
+// == Special "player" for signifying a draw game
 var DRAW_GAME = {};
 
 // ==========================================================
@@ -330,8 +330,8 @@ function showMap(container, gameState) {
     var defs = elem('defs', {},
             makeClipPaths() +
             makeGradient('b', '#88f', '#113') +
-            makeGradient('l', '#fb8', '#530') +
-            makeGradient('lh', '#fea', '#742') +
+            makeGradient('l', '#fa6', '#530') +
+            makeGradient('lh', '#fb7', '#741') +
             makeGradient('d', '#210', '#000') +
             makeGradient('w', '#55f', '#003') +
             map(gameState.p, function(player, index) {
@@ -1560,7 +1560,7 @@ function upgradeLevel(state, player, upgradeType) {
 // ==========================================================
 
 var PLAYER_TEMPLATES = [
-    {i:0, n: 'Amber', l: '#ffa', d:'#960', h: '#ffa', hd:'#a80'},
+    {i:0, n: 'Amber', l: '#fd8', d:'#960', h: '#fd8', hd:'#a80'},
     {i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
     {i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
     {i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
