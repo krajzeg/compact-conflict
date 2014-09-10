@@ -1215,11 +1215,15 @@ function heuristicForPlayer(player, state) {
     function adjustedRegionValue(region) {
         // count the value of the region itself
         var value = regionFullValue(state, region);
-        // but reduce it by the threat other players pose to it (or increase by our threat to them)
-        return value +
-            (1.0 - regionThreat(state, player, region)) * threatOpportunityMultiplier * value +
-            regionOpportunity(state, player, region) * threatOpportunityMultiplier +
-            soldierCount(state, region) * soldierBonus
+        // but also take into account the threat other players pose to it, and the opportunities it offers
+        if (gameSetup.l != AI_EASY) {
+            value += (1.0 - regionThreat(state, player, region)) * threatOpportunityMultiplier * value +
+                regionOpportunity(state, player, region) * threatOpportunityMultiplier;
+        }
+        // and the soldiers on it
+        value += soldierCount(state, region) * soldierBonus;
+
+        return value;
     }
 
     return sum(state.r, function (region) {
@@ -1638,6 +1642,8 @@ function income(state, player) {
         return soldierCount(state, temple.r);
     });
     var multiplier = 1.0 + 0.01 * upgradeLevel(state, player, WATER);
+    if ((player.u == aiPickMove) && (gameSetup.l == AI_UNFAIR))
+        multiplier += 0.4;
     return Math.ceil(multiplier * (fromRegions + fromTemples));
 }
 
