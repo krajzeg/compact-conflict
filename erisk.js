@@ -1758,7 +1758,7 @@ function prepareSetupUI() {
     });
 
     function aiButtons() {
-        return map(["Unfair", "Normal", "Easy"], function(level, index) {
+        return map(["Unfair", "Tough", "Easy"], function(level, index) {
             var id = "ai" + (2-index);
             return elem('a', {i: id, c: 'rt', href: '#', s: 'font-size: 90%'}, level);
         }).join("");
