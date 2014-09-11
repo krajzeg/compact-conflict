@@ -1823,7 +1823,8 @@ function templeInfo(state, temple) {
 
 var defaultSetup = {
     p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF],
-    l: AI_EASY
+    l: AI_EASY,
+    s: true
 };
 var gameSetup = getSetupFromStorage() || defaultSetup;
 
@@ -1967,13 +1968,13 @@ function runSetupScreen() {
 // ==========================================================
 
 function setupTitleScreen() {
-    showOrHide('o',1);
-    showOrHide('tub',1);
+    map(['o','tub','snd'], function(id) {showOrHide(id,1);});
 
     onClickOrTap($('cb'), setTitleScreenVisibility.bind(0,false));
     onClickOrTap($('nxt'), switchTutorialCard.bind(0,1));
     onClickOrTap($('prv'), switchTutorialCard.bind(0,-1));
     onClickOrTap($('tub'), setTitleScreenVisibility.bind(0,true));
+    onClickOrTap($('snd'), toggleSound);
 
     switchTutorialCard(0);
 
@@ -2105,16 +2106,29 @@ function setupAudio() {
     ), 0.2, 0.6);
     audioVictory = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:330, d:1}]), 0.6, 0.3);
     audioDefeat = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:150, d:0.5},{t:0.3, p:100, d:2}]), 0.6, 0.4);
+
+    // update the mute button
+    updateSoundControls();
 }
 
 function playSound(sound) {
-    if (!sound)
+    if (!(sound && gameSetup.s))
         return;
 
     var source = audioCtx.createBufferSource();
     source.buffer = sound;
     source.connect(audioCtx.destination);
     source.start();
+}
+
+function updateSoundControls() {
+    $('snd').innerHTML = gameSetup.s ? '♪' : ' ';
+    storeSetupInLocalStorage(gameSetup);
+}
+
+function toggleSound() {
+    gameSetup.s = !gameSetup.s;
+    updateSoundControls();
 }
 
 // ==========================================================
