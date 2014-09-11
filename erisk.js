@@ -253,22 +253,34 @@ function shuffle(seq) {
 // prior to gameplay.
 // ==========================================================
 
+// Generates a new map for a given number of players.
 function generateMap(playerCount) {
     var maxRegionSize = 11 - playerCount;
     var neededRegions = 13 + playerCount * 3;
     var perturbConst = rint(10000,100000);
+
     var regionMap, regions, count, retries;
+
+    // Repeat until we get a workable map
     do {
         regionMap = range(0,mapWidth).map(function(){return []});
         regions = []; count = 0; retries = 2500;
+
+        // The main loop is repeated only a limited number of times to
+        // handle cases where the map generator runs into a dead end.
         while ((count < neededRegions) && (--retries > 0)) {
+            // create a random region
             var bounds = {
                 l: rint(1, mapWidth - maxRegionSize + 1),
                 t: rint(1, mapHeight - maxRegionSize + 1),
                 w: rint(3, maxRegionSize), h: rint(3, maxRegionSize)
             };
+            // it has to overlap one of the existing ones
             if (count && !overlaps(bounds)) continue;
 
+            // we shrink it until it no longer overlaps - this guarantees
+            // that it will border at least one other region, making the map
+            // contiguous
             while (!shrink(bounds)) {
                 if (!overlaps(bounds)) {
                     regions.push(makeRegionAt(count++, bounds));
@@ -280,7 +292,8 @@ function generateMap(playerCount) {
 
 	fillNeighbourLists();	
 	return regions;
-	
+
+    // Shrink the region given by 'bounds' in a random direction
 	function shrink(bounds) {
 		var r = rint(0,4);
 		if (r % 2) bounds.w--; else bounds.h--;
@@ -289,6 +302,7 @@ function generateMap(playerCount) {
 		return (bounds.w * bounds.h < 9);
 	}
 
+    // Checks if the region given by 'bounds' overlaps any existing region.
 	function overlaps(bounds) {
 		var rv = false;
 		for2d(bounds.l, bounds.t, bounds.l+bounds.w, bounds.t+bounds.h, function(x,y) {
@@ -297,6 +311,7 @@ function generateMap(playerCount) {
 		return rv;
 	}
 
+    // Puts a new rectangular region at the position given in bounds {Left, Top, Width, Height}.
 	function makeRegionAt(index, bounds) {
 		// make points for the region
 		var l=bounds.l,t=bounds.t,w=bounds.w,h=bounds.h;
@@ -320,12 +335,14 @@ function generateMap(playerCount) {
 		return region;
 	}
 
+    // Perturbs a point to give the region borders a natural feel.
 	function perturbedPoint(x,y) {
 		var angle = (sin(x*x*y*y*600+perturbConst*357)) * 6.28;
 		var dist = (sin(x*y*600+perturbConst*211)) / 2;
 		return [x+sin(angle)*dist, y+cos(angle)*dist];
 	}
 
+    // Figures out who borders with who, using the 2d grid in 'regionMap'.
 	function fillNeighbourLists() {
 		for2d(1, 1, mapWidth-1, mapHeight-1, function(x,y) {
 			var region = regionMap[x][y];
@@ -346,6 +363,7 @@ function generateMap(playerCount) {
 // game map as an SVG object.
 // ==========================================================
 
+// Returns the center of weight of a given set of [x,y] points.
 function centerOfWeight(points) {
 	var xc = 0.0, yc = 0.0, l = points.length;
 	map(points, function(p) {
@@ -354,6 +372,7 @@ function centerOfWeight(points) {
 	return [xc/l, yc/l];
 }
 
+// Affine transform of a sequence of points: [x*xm+xd,y*ym+yd]
 function transformPoints(points, xm, ym, xd, yd) {
 	var c = centerOfWeight(points);
 	return map(points, function(p) {
@@ -361,6 +380,7 @@ function transformPoints(points, xm, ym, xd, yd) {
 	});
 }
 
+// 3d projection for the map
 function projectPoint(p) {
 	var x = p[0] / mapWidth, y = p[1] / mapHeight;
 	var alpha = x * .4 + .6;
@@ -368,6 +388,7 @@ function projectPoint(p) {
 	return [x*100, y*100];
 }
 
+// Generate a SVG gradient stop tag.
 function gradientStop(percent, color) {
 	return elem('stop', {
 		offset: percent + '%',
@@ -375,16 +396,18 @@ function gradientStop(percent, color) {
 	});
 }
 
+// Generate a SVG gradient tag for the map.
 function makeGradient(id, light, dark) {
 	return elem('radialGradient', {
 		i: id,
 		cx: '-100%', cy: '50%',
 		fx: '-100%', fy: '50%',
 		r: '200%',
-		gradientUnits: 'userSpaceOnUse'
+		gradientUnits: 'userSpaceOnUse' // we want it to scale with the map, not the region it's applied to
 	}, gradientStop(60, dark) + gradientStop(100, light));
 }
 
+// Creates a new polygon with the given fill, stroke and clipping path.
 function makePolygon(points, id, fill, stroke, clip) {
     stroke = stroke || "stroke:#000;stroke-width:0.25;";
     fill = fill ? "url(#" + fill + ")" : 'transparent';
@@ -401,10 +424,11 @@ function makePolygon(points, id, fill, stroke, clip) {
 	return elem('polygon', properties);
 }
 
+// Takes the map (regions) stored in gameState.r, and creates an SVG map out of it.
 function showMap(container, gameState) {
     var regions = gameState.r;
 
-    // define gradients for rendering
+    // define gradients and clipping paths for rendering
     var defs = elem('defs', {},
             makeClipPaths() +
             makeGradient('b', '#88f', '#113') +
@@ -417,6 +441,7 @@ function showMap(container, gameState) {
                     makeGradient('p' + index + 'h', player.h, player.hd);
             }).join(''));
 
+    // create all the layers (5 per region)
     var ocean = makePolygon([[0,0],[mapWidth,0],[mapWidth,mapHeight],[0,mapHeight]], 'b', 'b');
     var tops = makeRegionPolys('r', 'l', 1, 1, 0, 0);
     var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
@@ -448,18 +473,21 @@ function showMap(container, gameState) {
     makeTemples();
 
 
+    // makes clipping paths for the "highlight" polygons
     function makeClipPaths() {
         return map(regions, function(region, index) {
             return elem('clipPath', {i: 'clip' + index}, makePolygon(region.p, 'cp' + index, 'l', ''));
         }).join('');
     }
 
+    // a helper for creating a polygon with a given setup for all regions
     function makeRegionPolys(idPrefix, gradient, xm, ym, xd, yd, stroke, clip) {
         return elem('g', {}, map(regions, function(region, index) {
             return makePolygon(transformPoints(region.p, xm, ym, xd, yd), idPrefix + index, gradient, stroke, clip ? 'url(#' + clip + index + ')' : '');
         }).join(''));
     }
 
+    // makes temple, which are just <div>s with nested <div>s (the towers)
     function makeTemples() {
         forEachProperty(gameState.t, function(temple, index) {
 
@@ -482,6 +510,7 @@ function showMap(container, gameState) {
     }
 }
 
+// Prepares the whole sidebar on the left for gameplay use.
 function prepareIngameUI(gameState) {
     // turn counter
     var html = div({i: 'tc', c: 'sc'});
@@ -505,7 +534,7 @@ function prepareIngameUI(gameState) {
     // set it all
     $('d').innerHTML = html;
 
-    // stat box
+    // show stat box
     $('mv').style.display = 'block';
 }
 
@@ -515,6 +544,9 @@ function prepareIngameUI(gameState) {
 
 var uiCallbacks = {};
 
+// This is the handler that gets attached to most DOM elements.
+// Delegation through UI callbacks allows us to react differently
+// depending on game-state.
 function invokeUICallback(object, type, event) {
 	var cb = uiCallbacks[type];
 	if (cb) {
@@ -525,6 +557,10 @@ function invokeUICallback(object, type, event) {
 	return false;
 }
 
+// This is one of the "player controller" methods - the one that
+// is responsible for picking a move for a player. This one does
+// that using a human and some UI, and calls reportMoveCallback
+// with an object describing the move once its decided.
 var uiState = {};
 function uiPickMove(player, state, reportMoveCallback) {
 	var cleanState = {
