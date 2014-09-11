@@ -393,8 +393,6 @@ function showMap(container, gameState) {
 
         region.hl = $('hl' + index);
         onClickOrTap(region.hl, invokeUICallback.bind(0, region, 'c'));
-
-        region.e.oncontextmenu = debug.bind(0, region);
     });
 
     // additional callbacks for better UI
@@ -1285,10 +1283,6 @@ function regionOpportunity(state, player, region) {
             return 0;
         }
     });
-}
-
-function debug(region) {
-    return false;
 }
 
 function gimmeMoney() {
