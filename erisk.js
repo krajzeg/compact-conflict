@@ -1506,7 +1506,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
             // reset "attacking status" on the soldiers - at this point they will
             // move back to the source region or occupy the destination
-            map(fromList.slice(0, incomingSoldiers), function(soldier) {
+            map(fromList, function(soldier) {
                 soldier.a = 0;
             });
 
