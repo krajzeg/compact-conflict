@@ -199,6 +199,10 @@ function onClickOrTap(elem, fn) {
     });
 }
 
+function showOrHide(elementId, visible) {
+    $(elementId).style.display = visible ? 'block' : 'none';
+}
+
 // ==========================================================
 // This part of the code deals with procedural map generation
 // prior to gameplay.
@@ -1889,8 +1893,23 @@ function runSetupScreen() {
 
 function setupTitleScreen() {
     $('o').style.display = 'block';
+
     onClickOrTap($('cb'), setTitleScreenVisibility.bind(0,false));
+    onClickOrTap($('nxt'), switchTutorialCard.bind(0,1));
+    onClickOrTap($('prv'), switchTutorialCard.bind(0,-1));
+
+    switchTutorialCard(0);
+
     setTimeout(setTitleScreenVisibility.bind(0,showTitleScreen), 10);
+}
+
+var currentCard = 0, cards = 4;
+function switchTutorialCard(direction) {
+    currentCard = clamp(currentCard + direction, 0, cards-1);
+
+    setTransform($('tuc'), "translate3d(" + (-currentCard * 100 / cards) + "%,0,0)");
+    showOrHide('prv', currentCard > 0);
+    showOrHide('nxt', currentCard < cards - 1);
 }
 
 function setTitleScreenVisibility(visible) {
