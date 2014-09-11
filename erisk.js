@@ -340,12 +340,16 @@ function makePolygon(points, id, fill, stroke, clip) {
     stroke = stroke || "stroke:#000;stroke-width:0.25;";
     fill = fill ? "url(#" + fill + ")" : 'transparent';
 
-	return elem('polygon', {
-		i: id,
-		points: map(points, projectPoint).join(' '),
-		s: 'fill:' + fill + ";" + stroke + ';',
-        'clip-path': clip
-	})
+    var properties = {
+        i: id,
+        points: map(points, projectPoint).join(' '),
+        s: 'fill:' + fill + ";" + stroke + ';'
+    };
+
+    if (clip)
+        properties['clip-path'] = clip
+
+	return elem('polygon', properties);
 }
 
 function showMap(container, gameState) {
