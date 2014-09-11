@@ -214,11 +214,14 @@
             perspective: 40em;
             perspective-origin: 50% 0;
             transform: translate3d(0,0,3em);
+            -webkit-perspective: 40em;
+            -webkit-perspective-origin: 50% 0;
+            -webkit-transform: translate3d(0.2em,0,4em);
             transition: all 0.5s;
             opacity: 1.0;
         }
         #ts.h {
-            transform: translate3d(0,0,3em) rotateX(90deg);
+            -webkit-transform: translate3d(0.2em,0,4em) rotateX(90deg);
             opacity: 0.0;
         }
 
@@ -233,6 +236,7 @@
             font-size: 5em;
             margin: 0.7em 0 1em;
             transform: scale3d(1.5,1.5,1) rotateX(60deg);
+            -webkit-transform: scale3d(1.5,1.5,1) rotateX(60deg);
             text-shadow: 0 0.04em #777;
         }
         h1, h2 {
