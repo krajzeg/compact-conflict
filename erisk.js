@@ -702,7 +702,7 @@ function updateMapDisplay(gameState) {
         // find or create a <div> for showing the soldier
         var domElement = soldierDivsById[soldier.i];
         if (!domElement) {
-            var html = div({c: 's'});
+            var html = div({c: 's', s: 'display: none'});
             var container = $('m');
             container.insertAdjacentHTML('beforeEnd', html);
             domElement = soldierDivsById[soldier.i] = container.lastChild;
@@ -729,6 +729,7 @@ function updateMapDisplay(gameState) {
         domElement.style.left = xPosition + '%';
         domElement.style.top  = yPosition + '%';
         domElement.style.zIndex = 20 + y * 5 + x;
+        domElement.style.display = 'block';
 
         // selected?
         var decisionState = gameState.d || {};
