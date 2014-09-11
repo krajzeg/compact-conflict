@@ -829,25 +829,23 @@ function updateDisplay(gameState) {
     updateIngameUI(gameState);
 }
 
-var bannerTimeouts = [];
+var bannerCounter = 1;
 function showBanner(background, text) {
     oneAtATime(1, function() {
-        var banner = $('bn'), styles = banner.style;
+        // create a new banner div
+        var id = 'bn' + bannerCounter++;
+        $('c').insertAdjacentHTML('beforeend', div({i: id, c: 'bn'}, text));
+
+        var banner = $(id), styles = banner.style;
 
         styles.background = background;
-        styles.display = 'none';
         styles.opacity = 0.0;
+        setTransform(banner, transform(-1));
 
-        banner.innerHTML = text;
-
-        map(bannerTimeouts, clearTimeout);
-        bannerTimeouts = [
-            setTimeout(function() { styles.display = 'block'; setTransform(banner, transform(-1.0)); }, 1),
-            setTimeout(function() { styles.opacity = 1.0; setTransform(banner, transform(1.0)); }, 10),
-            setTimeout(function() { styles.opacity = 1.0; }, 510),
-            setTimeout(function() { styles.opacity = 0.0; }, 1010),
-            setTimeout(function() { styles.display = 'none'; }, 1510)
-        ];
+        setTimeout(function() { styles.opacity = 1.0; setTransform(banner, transform(1.0)); }, 1),
+        setTimeout(function() { styles.opacity = 1.0; }, 501),
+        setTimeout(function() { styles.opacity = 0.0; }, 1001),
+        setTimeout(function() { banner.parentNode.removeChild(banner); }, 1501)
     });
 
     function transform(offset) {
