@@ -16,6 +16,14 @@ var mapWidth = 30,
 // === The possible move types
 var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 
+// === Player properties
+var PLAYER_TEMPLATES = [
+    {i:0, n: 'Amber', l: '#fd8', d:'#960', h: '#fd8', hd:'#a80'},
+    {i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
+    {i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
+    {i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
+];
+
 // === Possible temple upgrades
 var UPGRADES = [
     {n: "Extra soldier", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
@@ -502,7 +510,7 @@ function prepareIngameUI(gameState) {
 }
 
 // ==========================================================
-// This part of the code deals with responding to user actions
+// This part of the code deals with responding to user actions.
 // ==========================================================
 
 var uiCallbacks = {};
@@ -1793,13 +1801,6 @@ function templeInfo(state, temple) {
 // ==========================================================
 // This is the code for the game setup screen.
 // ==========================================================
-
-var PLAYER_TEMPLATES = [
-    {i:0, n: 'Amber', l: '#fd8', d:'#960', h: '#fd8', hd:'#a80'},
-    {i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
-    {i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
-    {i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
-];
 
 function prepareSetupUI() {
     // player box area
