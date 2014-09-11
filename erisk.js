@@ -6,7 +6,6 @@ var mapWidth = 30,
 	mapHeight = 20, 
 	movesPerTurn = 3,
 	turnCount = 12,
-    showTitleScreen = true,
     minimumAIThinkingTime = 1000,
     maximumAIThinkingTime = 5000;
 
@@ -1892,15 +1891,17 @@ function runSetupScreen() {
 // ==========================================================
 
 function setupTitleScreen() {
-    $('o').style.display = 'block';
+    showOrHide('o',1);
+    showOrHide('tub',1);
 
     onClickOrTap($('cb'), setTitleScreenVisibility.bind(0,false));
     onClickOrTap($('nxt'), switchTutorialCard.bind(0,1));
     onClickOrTap($('prv'), switchTutorialCard.bind(0,-1));
+    onClickOrTap($('tub'), setTitleScreenVisibility.bind(0,true));
 
     switchTutorialCard(0);
 
-    setTimeout(setTitleScreenVisibility.bind(0,showTitleScreen), 10);
+    setTimeout(setTitleScreenVisibility.bind(0,true), 10);
 }
 
 var currentCard = 0, totalCards = 5;
@@ -1917,7 +1918,10 @@ function setTitleScreenVisibility(visible) {
         $('ts').style.display = 'block';
     }
 
-    $('ts').classList[visible ? 'remove' : 'add']('h');
+    setTimeout(function() {
+        $('ts').classList[visible ? 'remove' : 'add']('h');
+    }, 50);
+
     if (!visible) {
         setTimeout(function () {
             $('ts').style.display = 'none';
