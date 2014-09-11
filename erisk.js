@@ -518,6 +518,7 @@ var uiCallbacks = {};
 function invokeUICallback(object, type, event) {
 	var cb = uiCallbacks[type];
 	if (cb) {
+        playSound(audioClick);
 		cb(object);
 	}
     event.stopPropagation();
@@ -1987,6 +1988,84 @@ function setTitleScreenVisibility(visible) {
 }
 
 // ==========================================================
+// This part of the code does audio.
+// ==========================================================
+
+function lerp(alpha, from, to) {
+    alpha = clamp(alpha, 0, 1);
+    return to * alpha + from * (1 - alpha);
+}
+function adsr(a, d, s, r, sl, fn) {
+    var t = 0.0;
+    return function(dt) {
+        var f = fn(dt);
+        t += dt;
+
+        if (t < a)
+            return lerp(t / a, 0, 1) * f;
+        if (t < a+d)
+            return lerp((t-a) / d, 1, sl) * f;
+        if (t < a+d+s)
+            return sl * f;
+        return lerp((t-a-s-d) / r, sl, 0) * f;
+    }
+}
+
+function wSin(pitch) {
+    var t = 0.0;
+    return function(dt) {
+        t += dt;
+        return Math.sin(t * pitch * 6.283);
+    }
+}
+
+function wSlide(from, to, time, fn) {
+    var t = 0.0;
+    return function(dt) {
+        t += dt;
+        var passedDT = dt * lerp(t / time, from, to);
+        return fn(passedDT);
+    }
+}
+
+function makeBuffer(fn, len) {
+    var sampleRate = audioCtx.sampleRate;
+    var samples = sampleRate * len;
+    var buffer = audioCtx.createBuffer(1, samples, sampleRate);
+
+    var dt = 1 / sampleRate;
+    var bufferData = buffer.getChannelData(0);
+    for (var i = 0; i < samples; i++) {
+        bufferData[i] = fn(dt);
+    }
+
+    return buffer;
+}
+
+var audioCtx = window.AudioContext && (new AudioContext());
+var audioClick;
+function setupAudio() {
+    // do we have WebAudio?
+    if (!audioCtx)
+        return;
+
+    // generate sounds
+    audioClick = makeBuffer(adsr(0.01, 0.03, 0.01, 0.01, 0.2,
+        wSin(110)
+    ), 0.1);
+}
+
+function playSound(sound) {
+    if (!sound)
+        return;
+
+    var source = audioCtx.createBufferSource();
+    source.buffer = sound;
+    source.connect(audioCtx.destination);
+    source.start();
+}
+
+// ==========================================================
 // This part of the code initalizes a new game.
 // ==========================================================
 
@@ -1996,6 +2075,7 @@ function setTitleScreenVisibility(visible) {
 // start the game
 window.onload = function() {
     setTimeout(function() {
+        setupAudio();
         runSetupScreen();
         setupTitleScreen();
     }, 500);
