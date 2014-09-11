@@ -5,7 +5,7 @@
 var mapWidth = 30, 
 	mapHeight = 20, 
 	movesPerTurn = 3,
-	turnCount = 12,
+	turnCount = 2,
     showTitleScreen = true,
     minimumAIThinkingTime = 1000,
     maximumAIThinkingTime = 5000;
@@ -651,12 +651,16 @@ function updateMapDisplay(gameState) {
     function updateRegionDisplay(region) {
         var regionOwner = owner(gameState, region);
         var gradientName = (regionOwner ? 'p' + regionOwner.i : 'l');
-        var highlighted = contains(gameState.d && gameState.d.h || [], region);
+
+        var highlighted = contains(gameState.d && gameState.d.h || [], region) ||    // a region is highlighted if it has an available move
+                          (gameState.e && regionOwner == gameState.e);               // - or belongs to the winner (end game display highlights the winner)
 
         if (highlighted) {
             gradientName += 'h';
         }
         var highlightedOpacity = 0.08 + region.c[0] * 0.003;
+        if (gameState.e)
+            highlightedOpacity *= 2;
         region.hl.style.opacity = highlighted ? highlightedOpacity : 0.0;
         region.hl.style.cursor = highlighted ? 'pointer' : 'default';
 
@@ -748,9 +752,15 @@ function updateIngameUI(gameState) {
     map(gameState.p, function(player, index) {
         //$('pl' + index).className = (index == moveState.p) ? 'pl' : 'pi'; // active or not?
         var regions = regionCount(gameState, player);
+        var gameWinner = gameState.e;
+
         if (regions) {
             $('pr' + index).innerHTML = regionCount(gameState, player) + '&#9733;'; // region count
-            $('pc' + index).innerHTML = gameState.c[player.i] + '&#9775;'; // cash on hand
+            if (gameWinner) {
+                $('pc' + index).innerHTML = (gameWinner == player) ? '&#9819;' : '';
+            } else {
+                $('pc' + index).innerHTML = gameState.c[player.i] + '&#9775;'; // cash on hand
+            }
         } else {
             $('pr' + index).innerHTML = '&#9760;'; // skull and crossbones, you're dead
             $('pc' + index).innerHTML = '';
@@ -1623,6 +1633,8 @@ function showEndGame(state) {
         } else {
             showBanner('#333', "The game ends in a draw!");
         }
+
+        updateDisplay(state);
 
         $('tc').innerHTML = "Game complete";
         $('in').innerHTML = elem('p', {}, "Click the button bellow to start a new game.");
