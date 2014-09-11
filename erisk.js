@@ -1422,7 +1422,7 @@ function playOneMove(state) {
             // AI makes sounds when playing
             if (controllingPlayer.u == aiPickMove)
                 playSound(audioClick);
-            
+
             // the move is chosen - update state to a new immutable copy
             var newState = makeMove(state, move);
             // did the game end?
@@ -2056,26 +2056,23 @@ function wRamp(from, to, after, fn) {
 
 function wNotes(notes) {
     map(notes, function(note) {
-        note.f = adsr(0.01, 0.03, 0.03, 0.03, 0.5, wSlide(1.0, 1.5, 0.1, wSin(note.p)));
+        note.f = adsr(0.01, 0.03, 0.03 * note.d, 0.03 * note.d, 0.7, wSlide(1.0, 1.5, 0.1 * note.d, wSin(note.p)));
     });
+    var t = 0.0;
     return function(dt) {
-        // find the active note
-        if (!notes.length) return 0.0;
-        var note = notes[0];
-
-        // play it!
-        note.d -= dt;
-        var v = note.f(dt);
-
-        // next note?
-        if (note.d < 0)
-            notes.shift();
-
+        t += dt;
+        var v = 0.0;
+        map(notes, function(note) {
+            if (t >= note.t)
+                v += note.f(dt);
+        });
         return v;
     }
 }
 
-function makeBuffer(fn, len) {
+function makeBuffer(fn, len, vol) {
+    var vol = vol || 1;
+
     var sampleRate = audioCtx.sampleRate;
     var samples = sampleRate * len;
     var buffer = audioCtx.createBuffer(1, samples, sampleRate);
@@ -2083,7 +2080,7 @@ function makeBuffer(fn, len) {
     var dt = 1 / sampleRate;
     var bufferData = buffer.getChannelData(0);
     for (var i = 0; i < samples; i++) {
-        bufferData[i] = fn(dt);
+        bufferData[i] = fn(dt) * vol;
     }
 
     return buffer;
@@ -2102,12 +2099,12 @@ function setupAudio() {
     ), 0.1);
     audioEnemyDead = makeBuffer(adsr(0.01, 0.05, 0.05, 0.05, 0.5,
         wSlide(1.0, 0.3, 0.1, wSin(300))
-    ), 0.2);
+    ), 0.2, 0.6);
     audioOursDead = makeBuffer(adsr(0.01, 0.05, 0.05, 0.05, 0.5,
         wSlide(1.0, 0.3, 0.1, wSin(200))
-    ), 0.2);
-    audioVictory = makeBuffer(wNotes([{d:0.15, p:220},{d:0.15, p:280}]), 0.6);
-    audioDefeat = makeBuffer(wNotes([{d:0.15, p:220},{d:0.15, p:150}]), 0.6);
+    ), 0.2, 0.6);
+    audioVictory = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:330, d:1}]), 0.6, 0.3);
+    audioDefeat = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:150, d:0.5},{t:0.3, p:100, d:2}]), 0.6, 0.4);
 }
 
 function playSound(sound) {
