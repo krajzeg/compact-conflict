@@ -737,8 +737,13 @@ function updateIngameUI(gameState) {
 
     var active = activePlayer(gameState);
 
-    // turn counter
-    $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
+    // turn counter/building name
+    if (buildingMode) {
+        var info = templeInfo(decisionState.w);
+        $('tc').innerHTML = div({}, info.n) + div({c: 'ds'}, info.d);
+    } else {
+        $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
+    }
 
     // player data
     map(gameState.p, function(player, index) {
@@ -757,7 +762,7 @@ function updateIngameUI(gameState) {
     var info;
     if (active.u == uiPickMove) {
         if (buildingMode) {
-            info = elem('p', {}, 'Upgrade your temple or make a new soldier.');
+            info = elem('p', {}, 'Choose an upgrade to build.');
         } else if (movingArmy) {
             info = elem('p', {}, 'Click on a target region to move your army.') +
                 elem('p', {}, 'Click on the source region to choose how many to move.');
@@ -1717,6 +1722,16 @@ function totalSoldiers(state, player) {
 
 function soldierCost(state) {
     return SOLDIER.c[state.m.h || 0];
+}
+
+function templeInfo(temple) {
+    if (!temple.u)
+        return {n: "Basic Temple", d: "No upgrades."};
+    else {
+        var upgrade = temple.u, level = temple.l,
+            description = template(upgrade.d, upgrade.x[level]);
+        return {n: template(upgrade.n, LEVELS[level]), d: description};
+    }
 }
 
 // ==========================================================
