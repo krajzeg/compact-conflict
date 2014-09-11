@@ -808,7 +808,7 @@ function updateButtons(buttons) {
         if (button.h) return;
         var id = 'b' + index;
 
-        var buttonContents = button.t;
+        var buttonContents = div({}, button.t);
         if (button.d)
             buttonContents += div({c: 'ds'}, button.d);
 
