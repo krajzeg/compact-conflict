@@ -579,6 +579,7 @@ function uiPickMove(player, state, reportMoveCallback) {
 	}
 
     function makeUpgradeButtons(temple) {
+        var templeOwner = owner(state, temple.r);
         var upgradeButtons = map(UPGRADES, function(upgrade) {
             // current upgrade level (either the level of the temple or number of soldiers bought already)
             var level = (temple.u == upgrade) ? (temple.l+1) : ((upgrade == SOLDIER) ? (state.m.h || 0) : 0);
@@ -588,9 +589,10 @@ function uiPickMove(player, state, reportMoveCallback) {
             var description = template(upgrade.d, upgrade.x[level]);
 
             var hidden = false;
-            hidden = hidden || (upgrade == RESPEC && (!temple.u));
-            hidden = hidden || (temple.u && temple.u != upgrade && upgrade != SOLDIER && upgrade != RESPEC);
-            hidden = hidden || (level >= upgrade.c.length);
+            hidden = hidden || (upgrade == RESPEC && (!temple.u)); // respec only available if temple is upgraded
+            hidden = hidden || (temple.u && temple.u != upgrade && upgrade != SOLDIER && upgrade != RESPEC); // the temple is already upgraded with a different upgrade
+            hidden = hidden || (level >= upgrade.c.length); // highest level reached
+            hidden = hidden || (level < rawUpgradeLevel(state, templeOwner, upgrade)); // another temple has this upgrade already
 
             return {t: text, d: description, o: cost > cash(state, player), h: hidden};
         });
