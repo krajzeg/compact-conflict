@@ -1903,13 +1903,13 @@ function setupTitleScreen() {
     setTimeout(setTitleScreenVisibility.bind(0,showTitleScreen), 10);
 }
 
-var currentCard = 0, cards = 4;
+var currentCard = 0, totalCards = 5;
 function switchTutorialCard(direction) {
-    currentCard = clamp(currentCard + direction, 0, cards-1);
+    currentCard = clamp(currentCard + direction, 0, totalCards-1);
 
-    setTransform($('tuc'), "translate3d(" + (-currentCard * 100 / cards) + "%,0,0)");
+    setTransform($('tuc'), "translate3d(" + (-currentCard * 100 / totalCards) + "%,0,0)");
     showOrHide('prv', currentCard > 0);
-    showOrHide('nxt', currentCard < cards - 1);
+    showOrHide('nxt', currentCard < totalCards - 1);
 }
 
 function setTitleScreenVisibility(visible) {

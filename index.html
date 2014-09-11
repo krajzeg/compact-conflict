@@ -231,35 +231,37 @@
         #tut {
             position: absolute;
             left: 20%; right: 20%;
-            top: 30%; bottom: 13%;
+            top: 25%; bottom: 18%;
             overflow: hidden;
         }
         #tuc {
-            width: 400%; height: 100%;
+            width: 500%; height: 100%;
             transform: translate3d(0,0,0);
             transition: all 0.3s;
         }
         .crd {
-            width: 25%; height: 100%;
+            width: 20%; height: 100%;
             margin: 0;
             float: left;
+            text-align: justify;
         }
         .pic {
             position: relative;
             width: 10%;
             height: 15%;
+            margin: auto;
         }
         .rb {
             border-radius: 50%;
-            width: 2rem;
-            height: 2rem;
-            font-size: 1.5rem;
-            padding: 0;
+            width: 3rem;
+            height: 3rem;
+            font-size: 2rem;
+            padding: 0.4rem 0 0 0;
             box-sizing: border-box;
             position: absolute;
         }
-        #prv { left: 12%; top: 50%; }
-        #nxt { right: 12%; top: 50%; }
+        #prv { left: 10%; top: 50%; }
+        #nxt { right: 10%; top: 50%; }
 
         .bb {
             position: absolute;
@@ -285,14 +287,13 @@
         }
         ul {
             padding-left: 1.5em;
-            margin-top: 2em;
             text-align: left;
         }
         li {
-            margin-top: 0.25em;
+            margin-top: 0.15em;
         }
         b {
-            color: #bbc;
+            color: #ffa;
         }
     </style>
 </head>
@@ -319,46 +320,69 @@
     <div id='ts' class='h'>
         <h1>Compact Conflict</h1>
 
-        <p>The game lasts <b>12</b> turns. Once time runs out, the player <b>controlling the most regions</b> is declared the <b>winner</b>.</p>
-
         <div id="tut">
             <div id="tuc">
                 <div class="crd">
-                    <h2>Temples</h2>
-                    <div class="pic" style="width: 10%; margin: auto">
-                        <div class="o" style="background: #777; left:22%; top: 25%; width:60%; height:70%;"><div class="i" style="background: #777;"> </div></div>
+                    <h2>How to win (1/5)</h2>
+                    <div class="pic">
                     </div>
                     <ul>
-                        <li>Each player starts with one temple under their control.</li>
-                        <li>There are also neutral temples that you can conquer.</li>
-                        <li>At the end of your turn, each of your temples <b>produces a new soldier</b>.</li>
-                        <li>Temples can be imbued with elemental powers using upgrades.</li>
+                        <li>The game lasts <b>12</b> turns.</li>
+                        <li>Once time runs out, the player <b>controlling the most regions</b> is declared the <b>winner</b>.</li>
                     </ul>
                 </div>
                 <div class="crd">
-                    <h2>Armies</h2>
-                    <ul>
-                        <li>You get <b>3 moves</b> per turn. Each one allows to move one army to a neighbouring region.</li>
+                    <h2>Temples (2/5)</h2>
+                    <div class="pic">
+                        <div class="o" style="background: #777; left:22%; top: 30%; width:60%; height:70%;"><div class="i" style="background: #777;"> </div></div>
+                    </div>
+                    <ul style="margin-top: 1.5em">
+                        <li>Each player <b>starts with one temple</b> under their control.</li>
+                        <li>At the end of your turn, each of your temples <b>produces a new soldier</b>.</li>
+                        <li>You can <b>take over</b> your enemies' temples.</li>
+                        <li>There are also <b>neutral temples</b> that you can conquer.</li>
+                        <li>Temples can also be imbued with <b>elemental powers</b> using upgrades.</li>
+                    </ul>
+                </div>
+                <div class="crd">
+                    <h2>Soldiers (3/5)</h2>
+                    <div class="pic">
+                        <div class="s l" style="width:16%;height:20%;top:30%;left:20%"></div>
+                        <div class="s l" style="width:16%;height:20%;top:32%;left:40%"></div>
+                        <div class="s" style="width:16%;height:20%;top:34%;left:60%"></div>
+                    </div>
+                    <ul style="margin-top: 0;">
+                        <li>You get <b>3 moves</b> each turn.</li>
+                        <li>Every move allows to move <b>any number of soldiers</b> to a neighbouring region of your choice.</li>
                         <li>An army that has conquered a region <b>cannot move again</b> this turn.</li>
-                        <li>If you move into an occupied region, a battle ensues, with both sides dealing damage.</li>
+                        <li>If you move into an occupied region, a <b>battle</b> ensues.</li>
                         <li>If you manage to <b>kill all defenders</b>, you take over the region.</li>
                         <li>If the <b>defenders survive</b>, your army is forced to retreat.</li>
                     </ul>
                 </div>
                 <div class="crd">
-                    <h2>Income</h2>
+                    <h2>Income (4/5)</h2>
+                    <div class="pic">
+                        <div style="color:#fff;font-size:2em;padding-top:0.5em">&#9775;</div>
+                    </div>
                     <ul>
                         <li>Once you end your turn, new faith is generated: <b>1 for each region</b> you control, and <b>1 for each soldier</b> praying at one of your temples.</li>
                         <li>You also get <b>4 faith</b> for each soldier killed in defense of a region.</li>
                     </ul>
                 </div>
                 <div class="crd">
-                    <h2>Upgrades</h2>
-                    <ul>
-                        <li>Upgrades are purchased with faith. They grant special abilities.</li>
-                        <li>There are <b>2 levels</b> of each upgrade.</li>
+                    <h2>Upgrades (5/5)</h2>
+                    <div class="pic">
+                        <div class="o" style="background: #ffa; left:22%; top: 30%; width:60%; height:70%;">
+                            <div class="i" style="background: #ffa;"><div class="i" style="background: #ffa;"></div></div>
+                        </div>
+                    </div>
+                    <ul style="margin-top: 1.5em">
+                        <li><b>Elemental upgrades</b> are purchased with <b>faith</b> (&#9775;). They grant special abilities.</li>
+                        <li>There are <b>2 levels</b> of each upgrade, with the second one being more powerful.</li>
+                        <li>Instead of an upgrade, you can use faith to <b>recruit soldiers</b>.</li>
+                        <li>Each soldier you recruit inside a turn gets <b>more expensive</b>.</li>
                         <li>If a temple is lost, the <b>upgrade is lost with it</b>.</li>
-                        <li>Instead of an upgrade, you can use faith to <b>recruit soldiers</b>. The more soldiers you recruit, the more expensive it gets.</li>
                     </ul>
                 </div>
             </div>
