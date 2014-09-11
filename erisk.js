@@ -5,7 +5,7 @@
 var mapWidth = 30, 
 	mapHeight = 20, 
 	movesPerTurn = 3,
-	turnCount = 2,
+	turnCount = 12,
     showTitleScreen = true,
     minimumAIThinkingTime = 1000,
     maximumAIThinkingTime = 5000;
@@ -1470,7 +1470,6 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
 			var repeats = min([incomingSoldiers, defendingSoldiers]);
 			var attackerWinChance = 100 * Math.pow(incomingStrength / defendingStrength, 1.6);
-			var attackerDamage = 0;
 
             function randomNumberForFight(index) {
                 var maximum = 120 + attackerWinChance;
@@ -1481,7 +1480,10 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                     return (index + 3) * maximum / (repeats + 5);
                 } else {
                     // not a simulated fight - return a real random number
-                    return rint(0, maximum);
+                    // we're not using the full range 0 to maximum to make sure
+                    // that randomness doesn't give a feel-bad experience when
+                    // we attack with a giant advantage
+                    return rint(maximum * 0.12, maximum * 0.88);
                 }
             }
 
