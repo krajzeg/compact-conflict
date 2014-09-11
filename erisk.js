@@ -19,7 +19,7 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 
 // === Possible temple upgrades
 var UPGRADES = [
-    {n: "Believer", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
+    {n: "Extra soldier", d: "", c: map(range(0,100), function(n) { return 8 + n * 4; }), x: []},
     {n: "X of Water", d: "Income: X% more each turn.",
         c: [15, 25], x: [20, 40],
         b: '#66f'},
