@@ -3,7 +3,7 @@ Compact Conflict
 
 A minuscule risk-based strategy game created for [JS13k 2014](http://js13kgames.com/). Less than 13kB minified and zipped.
 
-You can **[play it right here](http://krajzeg.github.io/compact-conflict)** on Github.
+You can **[play it right here](http://krajzeg.github.io/compact-conflict/dist)** on Github.
 
 #### The code
 
@@ -15,3 +15,11 @@ If you want to build your own minified versions, `build.sh` can hook you up, but
 * htmlminifier
 
 Both are modules on **npm**.
+
+#### Thanks
+
+Thanks go to:
+
+* Krzysztof Kula, for getting me to try JS13k, and for quality feedback throughout.
+* Adam Kwapiński and Tomasz Bylina for invaluable gameplay testing sessions.
+* All the kind folks at [Schibsted Tech Polska](http://schibsted.pl/) who tested the game!
