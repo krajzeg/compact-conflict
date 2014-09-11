@@ -2057,7 +2057,7 @@ function wRamp(from, to, after, fn) {
 
 function wNotes(notes) {
     map(notes, function(note) {
-        note.f = adsr(0.01, 0.03, 0.03 * note.d, 0.03 * note.d, 0.7, wSlide(1.0, 1.5, 0.1 * note.d, wSin(note.p)));
+        note.f = adsr(0.01, 0.03, 0.03 * note.d, 0.03 * note.d, 0.7, wSin(note.p));
     });
     var t = 0.0;
     return function(dt) {
@@ -2104,8 +2104,14 @@ function setupAudio() {
     audioOursDead = makeBuffer(adsr(0.01, 0.05, 0.05, 0.05, 0.5,
         wSlide(1.0, 0.3, 0.1, wSin(200))
     ), 0.2, 0.6);
-    audioVictory = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:330, d:1}]), 0.6, 0.3);
-    audioDefeat = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:150, d:0.5},{t:0.3, p:100, d:2}]), 0.6, 0.4);
+    //audioVictory = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:330, d:1}]), 0.6, 0.3);
+    audioVictory = makeBuffer(wNotes([
+        {t:0, p:261,d:1},{t:0.0, p:329, d:2},{t:0.0, p:392, d:3},     // C-E-G
+        {t:0.2, p:261,d:1},{t:0.2, p:349, d:2},{t:0.2, p:440, d:3}    // C-F-A
+    ]), 0.6, 0.2);
+    audioDefeat = makeBuffer(wNotes([
+        {t:0, p:392,d:3},{t:0.15, p:329, d: 2}, {t:0.3, p:261, d:1}
+    ]), 0.6, 0.2);
 
     // update the mute button
     updateSoundControls();
