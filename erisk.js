@@ -1230,7 +1230,7 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
 
                 // perform the move (after a timeout if the minimal 'thinking time' wasn't reached
                 // so that whatever the AI does is easy to understand
-                setTimeout(moveCallback.bind(0,initialNode.b), max([minimumAIThinkingTime - elapsedTime, 1]));
+                setTimeout(moveCallback.bind(0, bestMove), max([minimumAIThinkingTime - elapsedTime, 1]));
                 return;
             }
         }
