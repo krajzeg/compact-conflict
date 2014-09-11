@@ -830,8 +830,9 @@ function updateDisplay(gameState) {
 }
 
 var bannerCounter = 1;
-function showBanner(background, text) {
-    oneAtATime(1, function() {
+function showBanner(background, text, delay) {
+    delay = delay || 1;
+    oneAtATime(delay, function() {
         // create a new banner div
         var id = 'bn' + bannerCounter++;
         $('c').insertAdjacentHTML('beforeend', div({i: id, c: 'bn'}, text));
@@ -963,7 +964,7 @@ function makeInitialState(setup) {
 			// make one of the regions your own
 			gameState.o[region.i] = player;
 			// put a temple and 3 soldiers in it
-			putTemple(region, 3);
+			putTemple(region, 1);
 		});
 
 		// setup neutral temples
@@ -1401,8 +1402,8 @@ function afterMoveChecks(state) {
                 state.m.l = 0;
             // show the world the good (or bad) news
             if (!state.a) {
-                oneAtATime(1500, updateDisplay.bind(0, state));
-                showBanner('#222', player.n + " has been eliminated!");
+                oneAtATime(150, updateDisplay.bind(0, state));
+                showBanner('#222', player.n + " has been eliminated!", 900);
             }
         }
     });
