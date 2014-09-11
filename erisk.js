@@ -518,13 +518,11 @@ function uiPickMove(player, state, reportMoveCallback) {
 
     uiCallbacks.t = function(region) {
         var temple = state.t[region.i];
-        if (owner(state,region) == player) {
-            state.d = {
-                t: BUILD_ACTION,
-                w: temple, r: region,
-                b: makeUpgradeButtons(temple)
-            };
-        }
+        state.d = {
+            t: BUILD_ACTION,
+            w: temple, r: region,
+            b: makeUpgradeButtons(temple)
+        };
         updateDisplay(state);
     };
 
@@ -593,6 +591,7 @@ function uiPickMove(player, state, reportMoveCallback) {
             hidden = hidden || (temple.u && temple.u != upgrade && upgrade != SOLDIER && upgrade != RESPEC); // the temple is already upgraded with a different upgrade
             hidden = hidden || (level >= upgrade.c.length); // highest level reached
             hidden = hidden || (level < rawUpgradeLevel(state, templeOwner, upgrade)); // another temple has this upgrade already
+            hidden = hidden || (templeOwner != player); // we're looking at an opponent's temple
 
             return {t: text, d: description, o: cost > cash(state, player), h: hidden};
         });
@@ -679,7 +678,7 @@ function updateMapDisplay(gameState) {
 
         // clickable?
         var templeOwner = owner(gameState, temple.r);
-        temple.e.style.cursor = (templeOwner == activePlayer(gameState)) ? 'zoom-in' : 'default';
+        temple.e.style.cursor = (templeOwner == activePlayer(gameState)) ? 'zoom-in' : 'help';
 
         // highlight?
         var selected = gameState.d && gameState.d.w == temple;
@@ -739,7 +738,7 @@ function updateIngameUI(gameState) {
 
     // turn counter/building name
     if (buildingMode) {
-        var info = templeInfo(decisionState.w);
+        var info = templeInfo(gameState, decisionState.w);
         $('tc').innerHTML = div({}, info.n) + div({c: 'ds'}, info.d);
     } else {
         $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
@@ -762,7 +761,10 @@ function updateIngameUI(gameState) {
     var info;
     if (active.u == uiPickMove) {
         if (buildingMode) {
-            info = elem('p', {}, 'Choose an upgrade to build.');
+            if (owner(gameState, decisionState.r) == active)
+                info = elem('p', {}, 'Choose an upgrade to build.');
+            else
+                info = '';
         } else if (movingArmy) {
             info = elem('p', {}, 'Click on a target region to move your army.') +
                 elem('p', {}, 'Click on the source region to choose how many to move.');
@@ -1724,10 +1726,11 @@ function soldierCost(state) {
     return SOLDIER.c[state.m.h || 0];
 }
 
-function templeInfo(temple) {
-    if (!temple.u)
-        return {n: "Basic Temple", d: "No upgrades."};
-    else {
+function templeInfo(state, temple) {
+    if (!temple.u) {
+        var name = owner(state, temple.r) ? "Basic Temple" : "Neutral Temple";
+        return {n: name, d: "No upgrades."};
+    } else {
         var upgrade = temple.u, level = temple.l,
             description = template(upgrade.d, upgrade.x[level]);
         return {n: template(upgrade.n, LEVELS[level]), d: description};
