@@ -842,10 +842,10 @@ function showBanner(background, text) {
         styles.opacity = 0.0;
         setTransform(banner, transform(-1));
 
-        setTimeout(function() { styles.opacity = 1.0; setTransform(banner, transform(1.0)); }, 1),
-        setTimeout(function() { styles.opacity = 1.0; }, 501),
-        setTimeout(function() { styles.opacity = 0.0; }, 1001),
-        setTimeout(function() { banner.parentNode.removeChild(banner); }, 1501)
+        setTimeout(function() { styles.opacity = 1.0; setTransform(banner, transform(1)); }, 100),
+        setTimeout(function() { styles.opacity = 1.0; }, 600),
+        setTimeout(function() { styles.opacity = 0.0; }, 1100),
+        setTimeout(function() { banner.parentNode.removeChild(banner); }, 1600)
     });
 
     function transform(offset) {
