@@ -1802,6 +1802,27 @@ function templeInfo(state, temple) {
 // This is the code for the game setup screen.
 // ==========================================================
 
+var defaultSetup = {
+    p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF],
+    l: AI_EASY
+};
+var gameSetup = getSetupFromStorage() || defaultSetup;
+
+// Gets user preferences from local storage, or returns false if there aren't any.
+function getSetupFromStorage() {
+    if (localStorage) {
+        var stored = localStorage.getItem("s");
+        return stored && JSON.parse(stored);
+    }
+}
+
+// Tries to store user preferences in local storage.
+function storeSetupInLocalStorage(setup) {
+    if (localStorage) {
+        localStorage.setItem("s", JSON.stringify(setup));
+    }
+}
+
 function prepareSetupUI() {
     // player box area
     var html = div({c: 'sc ds'}, "Player setup");
@@ -1845,10 +1866,6 @@ function prepareSetupUI() {
     }
 }
 
-var gameSetup = {
-    p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF],
-    l: AI_EASY
-};
 function runSetupScreen() {
     // generate initial setup and game state
     var game;
@@ -1900,11 +1917,17 @@ function runSetupScreen() {
     }
 
     function updateConfigButtons() {
+        // somebody changed something, so store the new setup
+        storeSetupInLocalStorage(gameSetup);
+
+        // update player buttons
         map(gameSetup.p, function(controller, playerIndex) {
            map(range(0,3), function(buttonIndex) {
                $('sb' + playerIndex + buttonIndex).classList[(controller == buttonIndex) ? 'add' : 'remove']('sl');
            })
         });
+
+        // update AI buttons
         map(range(0,3), function(index) {
            $('ai' + index).classList[(index == gameSetup.l) ? 'add' : 'remove']('sl');
         });
