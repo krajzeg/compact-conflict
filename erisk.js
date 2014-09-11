@@ -772,8 +772,8 @@ function updateIngameUI(gameState) {
 
     // active player stats
     $('pd').style.display =  buildingMode ? 'none' : 'block';
-    $('mc').innerHTML = moveState.l;
-    $('ft').innerHTML = gameState.c[active.i];
+    $('mc').innerHTML = moveState.l + elem('span', {s: 'font-size: 80%'}, '&#10138;');
+    $('ft').innerHTML = gameState.c[active.i] +  elem('span', {s: 'font-size: 80%'}, '&#9775;');
 
     // buttons
     updateButtons(decisionState && decisionState.b);
