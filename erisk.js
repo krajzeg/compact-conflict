@@ -692,6 +692,7 @@ function updateMapDisplay(gameState) {
     forEachProperty(gameState.s, function(soldiers, regionIndex) {
         map(soldiers, updateSoldierDisplay.bind(0, gameState.r[regionIndex]));
     });
+
     forEachProperty(soldierDivsById, function(div, id) {
         if (soldiersStillAlive.indexOf(parseInt(id)) < 0) {
             // this is an ex-div - in other words, the soldier it represented is dead
@@ -742,7 +743,7 @@ function updateMapDisplay(gameState) {
     }
     function updateSoldierDisplay(region, soldier, index) {
         // we're still alive, so no removing our <div>
-        soldiersStillAlive.push(soldier.i); // BUG: we're getting an 'undefined' in soldier here sometimes
+        soldiersStillAlive.push(soldier.i);
 
         // find or create a <div> for showing the soldier
         var domElement = soldierDivsById[soldier.i];
@@ -874,8 +875,15 @@ function updateDisplay(gameState) {
     // just for debugging
     displayedState = gameState;
 
+    // update the graphics
     updateMapDisplay(gameState);
     updateIngameUI(gameState);
+
+    // make sounds!
+    if (gameState.sc) {
+        playSound(gameState.sc);
+        gameState.sc = null;
+    }
 }
 
 var bannerCounter = 1;
@@ -1411,6 +1419,10 @@ function playOneMove(state) {
 
         // let the player pick their move using UI or AI
         pickMove(controllingPlayer, state, function(move) {
+            // AI makes sounds when playing
+            if (controllingPlayer.u == aiPickMove)
+                playSound(audioClick);
+            
             // the move is chosen - update state to a new immutable copy
             var newState = makeMove(state, move);
             // did the game end?
@@ -1542,14 +1554,15 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                     if (invincibility-- <= 0) {
                         fromList.shift();
                         incomingSoldiers--;
+                        battleAnimationKeyframe(state, 250, audioOursDead);
                     }
                 } else {
                     // attacker wins, kill defender and pay the martyr bonus
                     toList.shift();
                     if (toOwner)
                         state.c[toOwner.i] += 4;
+                    battleAnimationKeyframe(state, 250, audioEnemyDead);
                 }
-                battleAnimationKeyframe(state, 250);
 			});
 
             // reset "attacking status" on the soldiers - at this point they will
@@ -1562,6 +1575,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
             if (toList.length) {
                 // and prevent anybody from moving in
                 incomingSoldiers = 0;
+                state.sc = audioDefeat;
             }
 		}
 	}
@@ -1581,6 +1595,9 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
             var temple = state.t[toRegion.i];
             if (temple)
                 delete temple.u;
+            // play sound!
+            if (defendingSoldiers)
+                state.sc = audioVictory;
         }
     }
 
@@ -1588,9 +1605,10 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
     state.m.l--;
 }
 
-function battleAnimationKeyframe(state, delay) {
+function battleAnimationKeyframe(state, delay, soundCue) {
     if (state.a) return;
     var keyframe = copyState(state);
+    keyframe.sc = soundCue;
     oneAtATime(delay || 500, updateDisplay.bind(0, keyframe));
 }
 
@@ -2028,6 +2046,35 @@ function wSlide(from, to, time, fn) {
     }
 }
 
+function wRamp(from, to, after, fn) {
+    var t = 0.0;
+    return function(dt) {
+        t += dt;
+        return fn(t > after ? dt * to : dt * from);
+    }
+}
+
+function wNotes(notes) {
+    map(notes, function(note) {
+        note.f = adsr(0.01, 0.03, 0.03, 0.03, 0.5, wSlide(1.0, 1.5, 0.1, wSin(note.p)));
+    });
+    return function(dt) {
+        // find the active note
+        if (!notes.length) return 0.0;
+        var note = notes[0];
+
+        // play it!
+        note.d -= dt;
+        var v = note.f(dt);
+
+        // next note?
+        if (note.d < 0)
+            notes.shift();
+
+        return v;
+    }
+}
+
 function makeBuffer(fn, len) {
     var sampleRate = audioCtx.sampleRate;
     var samples = sampleRate * len;
@@ -2043,7 +2090,7 @@ function makeBuffer(fn, len) {
 }
 
 var audioCtx = window.AudioContext && (new AudioContext());
-var audioClick;
+var audioClick, audioEnemyDead, audioOursDead, audioVictory, audioDefeat;
 function setupAudio() {
     // do we have WebAudio?
     if (!audioCtx)
@@ -2053,6 +2100,14 @@ function setupAudio() {
     audioClick = makeBuffer(adsr(0.01, 0.03, 0.01, 0.01, 0.2,
         wSin(110)
     ), 0.1);
+    audioEnemyDead = makeBuffer(adsr(0.01, 0.05, 0.05, 0.05, 0.5,
+        wSlide(1.0, 0.3, 0.1, wSin(300))
+    ), 0.2);
+    audioOursDead = makeBuffer(adsr(0.01, 0.05, 0.05, 0.05, 0.5,
+        wSlide(1.0, 0.3, 0.1, wSin(200))
+    ), 0.2);
+    audioVictory = makeBuffer(wNotes([{d:0.15, p:220},{d:0.15, p:280}]), 0.6);
+    audioDefeat = makeBuffer(wNotes([{d:0.15, p:220},{d:0.15, p:150}]), 0.6);
 }
 
 function playSound(sound) {
