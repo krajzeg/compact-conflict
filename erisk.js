@@ -1741,7 +1741,7 @@ function showEndGame(state) {
         updateDisplay(state);
 
         $('tc').innerHTML = "Game complete";
-        $('in').innerHTML = elem('p', {}, "Click the button bellow to start a new game.");
+        $('in').innerHTML = elem('p', {}, "Click the button below to start a new game.");
         $('in').style.background = '#555';
         $('mv').style.display = 'none';
         updateButtons([{t: "New game"}]);
