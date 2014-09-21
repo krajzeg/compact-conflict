@@ -5,7 +5,6 @@
 var mapWidth = 30, 
 	mapHeight = 20, 
 	movesPerTurn = 3,
-	turnCount = 12,
     minimumAIThinkingTime = 1000,
     maximumAIThinkingTime = 5000;
 
@@ -46,8 +45,9 @@ var UPGRADES = [
     SOLDIER = UPGRADES[0], WATER = UPGRADES[1], FIRE = UPGRADES[2], AIR = UPGRADES[3], EARTH = UPGRADES[4], RESPEC = UPGRADES[5];
 
 // === Constants for setup screen
-var PLAYER_AI = 0, PLAYER_HUMAN = 1, PLAYER_OFF = 2;
+var PLAYER_OFF = 0, PLAYER_HUMAN = 1, PLAYER_AI = 2;
 var AI_EASY = 0, AI_NORMAL = 1, AI_UNFAIR = 2;
+var UNLIMITED_TURNS = 1000000, TURN_COUNTS = [12, 15, UNLIMITED_TURNS];
 
 // == Special "player" for signifying a draw game
 var DRAW_GAME = {};
@@ -835,7 +835,7 @@ function updateIngameUI(gameState) {
         var info = templeInfo(gameState, decisionState.w);
         $('tc').innerHTML = div({}, info.n) + div({c: 'ds'}, info.d);
     } else {
-        $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b> / ' + turnCount;
+        $('tc').innerHTML = 'Turn <b>' + gameState.m.t + '</b>' + ((gameSetup.tc != UNLIMITED_TURNS) ? ' / ' + gameSetup.tc : '');
     }
 
     // player data
@@ -1317,7 +1317,7 @@ function possibleMoves(state) {
 }
 
 function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
-    var alpha = (state.m.t - dropOffTurn) / (turnCount - dropOffTurn);
+    var alpha = (state.m.t - dropOffTurn) / (gameSetup.tc - dropOffTurn);
     if (alpha < 0.0)
         alpha = 0.0;
     return (startOfGameValue + (endOfGameValue - startOfGameValue) * alpha);
@@ -1706,9 +1706,9 @@ function nextTurn(state) {
     } while (!regionCount(state, upcomingPlayer));
 
     // did the game end by any chance?
-    if (state.m.t > turnCount) {
+    if (state.m.t > gameSetup.tc) {
         // end the game!
-        state.m.t = turnCount;
+        state.m.t = gameSetup.tc;
         state.e = determineGameWinner(state);
         return;
     }
@@ -1860,15 +1860,25 @@ function templeInfo(state, temple) {
 var defaultSetup = {
     p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF],
     l: AI_EASY,
-    s: true
+    s: true,
+    tc: 12
 };
-var gameSetup = getSetupFromStorage() || defaultSetup;
+var gameSetup = getSetupFromStorage();
 
 // Gets user preferences from local storage, or returns false if there aren't any.
 function getSetupFromStorage() {
     if (localStorage) {
         var stored = localStorage.getItem("s");
-        return stored && JSON.parse(stored);
+        if (stored) {
+            stored = JSON.parse(stored);
+            forEachProperty(defaultSetup, function(value, name) {
+                if (stored[name] === undefined)
+                    stored[name] = value;
+            });
+            return stored;
+        }
+    } else {
+        return defaultSetup;
     }
 }
 
@@ -1884,15 +1894,15 @@ function prepareSetupUI() {
     var html = div({c: 'sc ds'}, "Player setup");
     var playerBoxes = map(PLAYER_TEMPLATES, function(player) {
         var pid = player.i;
-        return div({
-                i: 'pl' + pid,
-                c: 'pl',
-                style: 'background: ' + player.d
-            }, player.n + playerButtons(pid)
-        );
+        return buttonPanel(player.n, "sb" + player.i, ["AI", "Human", "Off"], {
+            i: 'pl' + pid,
+            c: 'pl',
+            s: 'background: ' + player.d
+        });
     }).join("");
     html += div({i: 'pd', c: 'sc un'}, playerBoxes);
-    html += div({c: 'sc ds', s: 'padding-right: 0.5em'}, "AI level" + aiButtons());
+    html += buttonPanel("AI level", "ai", ["Unfair", "Tough", "Easy"]);
+    html += buttonPanel("Turn count", "tc", ["Unlimited", "15", "12"]);
 
     // realize the UI
     $('d').innerHTML = html;
@@ -1906,19 +1916,19 @@ function prepareSetupUI() {
     });
     map(range(0,3), function(index) {
         onClickOrTap($('ai' + index), invokeUICallback.bind(0, index, 'ai'));
+        onClickOrTap($('tc' + index), invokeUICallback.bind(0, TURN_COUNTS[index], 'tc'));
     });
 
-    function aiButtons() {
-        return map(["Unfair", "Tough", "Easy"], function(level, index) {
-            var id = "ai" + (2-index);
-            return elem('a', {i: id, c: 'rt', href: '#', s: 'font-size: 90%'}, level);
+    function buttonPanel(title, buttonIdPrefix, buttonLabels, additionalProperties) {
+        var buttons = map(buttonLabels, function(label, index) {
+            var id = buttonIdPrefix + (buttonLabels.length-1-index);
+            return elem('a', {i: id, c: 'rt', href: '#', s: 'font-size: 90%'}, label);
         }).join("");
-    }
-    function playerButtons(playerIndex) {
-        return map(["AI", "Human", "Off"], function(label, buttonIndex) {
-          var id = "sb" + playerIndex + buttonIndex;
-          return elem('a', {i: id, c: 'rt', href: '#'}, label);
-        }).join("");
+        var properties = {c: 'sc ds', s: 'padding-right: 0.5em'};
+        forEachProperty(additionalProperties, function(value, name) {
+            properties[name] = value;
+        });
+        return div(properties, title + buttons);
     }
 }
 
@@ -1951,11 +1961,15 @@ function runSetupScreen() {
         updateBottomButtons();
         regenerateMap();
     };
-    // callback for AI level
+    // callback for config buttons
     uiCallbacks.ai = function(aiLevel) {
         gameSetup.l = aiLevel;
         updateConfigButtons();
     };
+    uiCallbacks.tc = function(turnCount) {
+        gameSetup.tc = turnCount;
+        updateConfigButtons();
+    }
 
     function setupValid() {
         var enabledPlayers = sum(gameSetup.p, function(playerState) {
@@ -1983,9 +1997,10 @@ function runSetupScreen() {
            })
         });
 
-        // update AI buttons
+        // update AI and turn count buttons
         map(range(0,3), function(index) {
            $('ai' + index).classList[(index == gameSetup.l) ? 'add' : 'remove']('sl');
+           $('tc' + index).classList[(TURN_COUNTS[index] == gameSetup.tc) ? 'add' : 'remove']('sl');
         });
     }
 
