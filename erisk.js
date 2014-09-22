@@ -1905,7 +1905,7 @@ var defaultSetup = {
     s: true,
     tc: 12
 };
-var gameSetup = getSetupFromStorage();
+var gameSetup;
 
 // Gets user preferences from local storage, or returns false if there aren't any.
 function getSetupFromStorage() {
@@ -1913,15 +1913,15 @@ function getSetupFromStorage() {
         var stored = localStorage.getItem("s");
         if (stored) {
             stored = JSON.parse(stored);
-            forEachProperty(defaultSetup, function(value, name) {
+            forEachProperty(defaultSetup, function (value, name) {
                 if (stored[name] === undefined)
                     stored[name] = value;
             });
             return stored;
         }
-    } else {
-        return defaultSetup;
     }
+
+    return defaultSetup;
 }
 
 // Tries to store user preferences in local storage.
@@ -2242,6 +2242,7 @@ function toggleSound() {
 // start the game
 window.onload = function() {
     setTimeout(function() {
+        gameSetup = getSetupFromStorage();
         setupAudio();
         runSetupScreen();
         setupTitleScreen();
