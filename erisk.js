@@ -49,6 +49,9 @@ var PLAYER_OFF = 0, PLAYER_HUMAN = 1, PLAYER_AI = 2;
 var AI_EASY = 0, AI_NORMAL = 1, AI_UNFAIR = 2;
 var UNLIMITED_TURNS = 1000000, TURN_COUNTS = [12, 15, UNLIMITED_TURNS];
 
+// == Application "states"
+var APP_SETUP_SCREEN = 0, APP_INGAME = 1;
+
 // == Special "player" for signifying a draw game
 var DRAW_GAME = {};
 
@@ -777,9 +780,9 @@ function updateMapDisplay(gameState) {
             element = element.firstChild;
         }
 
-        // clickable?
+        // which cursor should we use?
         var templeOwner = owner(gameState, temple.r);
-        temple.e.style.cursor = (templeOwner == activePlayer(gameState)) ? 'zoom-in' : 'help';
+        temple.e.style.cursor = (appState == APP_INGAME) ? ((templeOwner == activePlayer(gameState)) ? 'zoom-in' : 'help') : 'default';
 
         // highlight?
         var selected = gameState.d && gameState.d.w == temple;
@@ -1460,6 +1463,9 @@ function copyState(state, simulatingPlayer) {
 }
 
 function playOneMove(state) {
+    // we're playing the game now
+    appState = APP_INGAME;
+
     // oneAtATime is used to ensure that all animations from previous moves complete before a new one is played
     oneAtATime(150, function() {
         var controllingPlayer = activePlayer(state); // who is the active player to make some kind of move?
@@ -1905,7 +1911,8 @@ var defaultSetup = {
     s: true,
     tc: 12
 };
-var gameSetup;
+var gameSetup = getSetupFromStorage();
+var appState = 0;
 
 // Gets user preferences from local storage, or returns false if there aren't any.
 function getSetupFromStorage() {
@@ -1975,6 +1982,9 @@ function prepareSetupUI() {
 }
 
 function runSetupScreen() {
+    // we're in setup now
+    appState = APP_SETUP_SCREEN;
+
     // generate initial setup and game state
     var game;
     regenerateMap();
@@ -2011,7 +2021,7 @@ function runSetupScreen() {
     uiCallbacks.tc = function(turnCount) {
         gameSetup.tc = turnCount;
         updateConfigButtons();
-    }
+    };
 
     function setupValid() {
         var enabledPlayers = sum(gameSetup.p, function(playerState) {
