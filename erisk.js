@@ -187,6 +187,9 @@ function showOrHide(elementId, visible) {
     $(elementId).style.display = visible ? 'block' : 'none';
 }
 
+function hide(elementId) { showOrHide(elementId, 0); }
+function show(elementId) { showOrHide(elementId, 1); }
+
 // ==========================================================
 // Working on sequences
 // ==========================================================
@@ -534,8 +537,8 @@ function prepareIngameUI(gameState) {
     // set it all
     $('d').innerHTML = html;
 
-    // show stat box
-    $('mv').style.display = 'block';
+    // show stat box and undo button
+    map(['mv', 'und'], show);
 }
 
 // ==========================================================
@@ -651,6 +654,11 @@ function uiPickMove(player, state, reportMoveCallback) {
             }
         }
 	};
+
+    uiCallbacks.un = function() {
+        // undo!
+        performUndo(state);
+    };
 
     setCleanState();
     if (uiState[player.i]) {
@@ -886,6 +894,9 @@ function updateIngameUI(gameState) {
 
     // buttons
     updateButtons(decisionState && decisionState.b);
+
+    // undo
+    $('und').innerHTML = undoEnabled(gameState) ? "&#x21b6;" : "";
 }
 
 function updateButtons(buttons) {
@@ -1468,6 +1479,8 @@ function playOneMove(state) {
                 showEndGame(newState);
                 return;
             } else {
+                // remember state for undo purposes
+                previousState = copyState(state);
                 // still more of the game to go - next move, please!
                 setTimeout(playOneMove.bind(0, newState), 1);
             }
@@ -1561,6 +1574,9 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
 
         // if there is still defense and offense, let's have a fight
 		if (defendingSoldiers && incomingSoldiers) {
+            // at this point, the outcome becomes random - so you can't undo your way out of it
+            state.u = 1;
+
             var incomingStrength = incomingSoldiers * (1 + upgradeLevel(state, fromOwner, FIRE) * 0.01);
             var defendingStrength = defendingSoldiers * (1 + upgradeLevel(state, toOwner, EARTH) * 0.01);
 
@@ -1854,6 +1870,32 @@ function templeInfo(state, temple) {
 }
 
 // ==========================================================
+// Undo functionality
+// ==========================================================
+
+var previousState = null;
+
+function undoEnabled(gameState) {
+    return previousState && // there is a state to return to
+        (activePlayer(previousState) == activePlayer(gameState)) &&  // and it was actually our move
+        (!gameState.u) && // and undo wasn't expressly disabled after a battle
+        (activePlayer(gameState).u == uiPickMove); // and no using Undo on behalf of the AI!
+}
+
+function performUndo(currentState) {
+    if (!undoEnabled(currentState))
+        return;
+
+    // clear the callbacks from previous UI interaction
+    uiCallbacks = {};
+
+    // roll back the state to "previous"
+    var restoredState = previousState;
+    previousState = null;
+    playOneMove(restoredState);
+}
+
+// ==========================================================
 // This is the code for the game setup screen.
 // ==========================================================
 
@@ -1907,8 +1949,8 @@ function prepareSetupUI() {
     // realize the UI
     $('d').innerHTML = html;
 
-    // stat box
-    $('mv').style.display = 'none';
+    // hide stat box and undo button
+    map(['mv', 'und'], hide);
 
     // setup callbacks for players
     for2d(0, 0, PLAYER_TEMPLATES.length, 3, function(playerIndex, buttonIndex) {
@@ -2024,8 +2066,10 @@ function setupTitleScreen() {
     onClickOrTap($('cb'), setTitleScreenVisibility.bind(0,false));
     onClickOrTap($('nxt'), switchTutorialCard.bind(0,1));
     onClickOrTap($('prv'), switchTutorialCard.bind(0,-1));
+
     onClickOrTap($('tub'), setTitleScreenVisibility.bind(0,true));
     onClickOrTap($('snd'), toggleSound);
+    onClickOrTap($('und'), invokeUICallback.bind(0, 0, 'un'));
 
     switchTutorialCard(0);
 
