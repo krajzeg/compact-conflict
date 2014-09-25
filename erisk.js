@@ -1367,16 +1367,17 @@ function heuristicForPlayer(player, state) {
     var regionTotal = sum(state.r, function (region) {
         return (owner(state, region) == player) ? adjustedRegionValue(region) : 0;
     });
-    var faithTotal = cash(state, player) * soldierBonus / 12; // each point of faith counts as 1/12th of a soldier
+    var faithTotal = income(state, player) * soldierBonus / 12; // each point of faith counts as 1/12th of a soldier
     return regionTotal + faithTotal;
 }
 
 function regionFullValue(state, region) {
     var temple = state.t[region.i];
     if (temple) {
-        var templeBonus = slidingBonus(state, 8, 0, 0.1);
-        var templeMultiplier = temple.u ? (1.5 + temple.l * 0.5) : 1;
-        return 1 + templeBonus * templeMultiplier;
+        var templeBonus = slidingBonus(state, 6, 0, 0.5);
+        var upgradeBonus = slidingBonus(state, 4, 0, 0.9);
+        var upgradeValue = temple.u ? (temple.l + 1) : 0;
+        return 1 + templeBonus + upgradeBonus * upgradeValue;
     } else {
         return 1;
     }
@@ -1411,7 +1412,7 @@ function regionThreat(state, player, region) {
 
         return total;
     }));
-    return clamp((enemyPresence / (ourPresence+0.0001) - 1) / 3, 0, 0.9);
+    return clamp((enemyPresence / (ourPresence+0.0001) - 1) / 1.5, 0, 1.1);
 }
 
 function regionOpportunity(state, player, region) {
@@ -1440,6 +1441,7 @@ function gimmeMoney() {
 function debug(region) {
     var regionOwner = owner(displayedState, region);
     console.log("THREAT:" + regionThreat(displayedState, regionOwner, region));
+    console.log("VALUE:" + regionFullValue(displayedState, region));
     return false;
 }
 
@@ -2255,7 +2257,6 @@ function setupAudio() {
     audioOursDead = makeBuffer(adsr(0.01, 0.05, 0.05, 0.05, 0.5,
         wSlide(1.0, 0.3, 0.1, wSin(200))
     ), 0.2, 0.6);
-    //audioVictory = makeBuffer(wNotes([{t:0, p:220,d:0.5},{t:0.15, p:330, d:1}]), 0.6, 0.3);
     audioVictory = makeBuffer(wNotes([
         {t:0, p:261,d:1},{t:0.0, p:329, d:2},{t:0.0, p:392, d:3},     // C-E-G
         {t:0.2, p:261,d:1},{t:0.2, p:349, d:2},{t:0.2, p:440, d:3}    // C-F-A
