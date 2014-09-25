@@ -1356,9 +1356,11 @@ function heuristicForPlayer(player, state) {
         return value;
     }
 
-    return sum(state.r, function (region) {
+    var regionTotal = sum(state.r, function (region) {
         return (owner(state, region) == player) ? adjustedRegionValue(region) : 0;
     });
+    var faithTotal = cash(state, player) * soldierBonus / 12; // each point of faith counts as 1/12th of a soldier
+    return regionTotal + faithTotal;
 }
 
 function regionFullValue(state, region) {
