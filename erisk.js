@@ -72,7 +72,9 @@ var AI_PERSONALITIES = [
 // ==========================================================
 
 var sin = Math.sin, 
-	cos = Math.cos, 
+	cos = Math.cos,
+    floor = Math.floor,
+    ceil = Math.ceil,
 	
 	wnd = window, 
 	doc = document, 
@@ -81,7 +83,7 @@ var sin = Math.sin,
 
 // Returns a random number between low (inclusive) and high (exclusive).
 function rint(low,high) {
-	return Math.floor(low+Math.random()*(high-low));
+	return floor(low+Math.random()*(high-low));
 }
 
 // Returns an array of integers from low (inclusive) to high (exclusive).
@@ -806,10 +808,12 @@ function updateMapDisplay(gameState) {
         var center = region.c;
         var totalSoldiers = soldierCount(gameState, region);
 
-        var columnWidth = min([totalSoldiers,5]);
-        var x = index % 5, y = Math.floor(index / 5);
+        var columnWidth = min([totalSoldiers,4]);
+        var rowHeight = min([2 / ceil(totalSoldiers / 4), 1]);
+
+        var x = index % 4, y = floor(index / 4);
         var xOffset = (-0.6 * columnWidth + x * 1.2);
-        var yOffset = y * 0.8;
+        var yOffset = y * rowHeight;
         var xPosition = center[0] + xOffset - yOffset * 0.2 - 0.3;
         var yPosition = center[1] + 1.5 + xOffset * 0.2 + yOffset;
 
@@ -1320,7 +1324,7 @@ function possibleMoves(state) {
            map(region.n, function(neighbour) {
                addArmyMove(region, neighbour, soldiers);
                if (soldiers > 1)
-                   addArmyMove(region, neighbour, Math.floor(soldiers / 2));
+                   addArmyMove(region, neighbour, floor(soldiers / 2));
            });
        }
     });
@@ -1800,7 +1804,7 @@ function income(state, player) {
     var multiplier = 1.0 + 0.01 * upgradeLevel(state, player, WATER);
     if ((player.u == aiPickMove) && (gameSetup.l == AI_UNFAIR))
         multiplier += 0.4;
-    return Math.ceil(multiplier * (fromRegions + fromTemples));
+    return ceil(multiplier * (fromRegions + fromTemples));
 }
 
 function regionHasActiveArmy(state, player, region) {
