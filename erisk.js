@@ -46,7 +46,7 @@ var UPGRADES = [
 
 // === Constants for setup screen
 var PLAYER_OFF = 0, PLAYER_HUMAN = 1, PLAYER_AI = 2;
-var AI_EASY = 0, AI_TOUGH = 1, AI_UNFAIR = 2;
+var AI_NICE = 0, AI_RUDE = 1, AI_MEAN = 2, AI_EVIL = 3;
 var UNLIMITED_TURNS = 1000000, TURN_COUNTS = [9, 12, 15, UNLIMITED_TURNS];
 
 // == Application "states"
@@ -1354,10 +1354,8 @@ function heuristicForPlayer(player, state) {
         // count the value of the region itself
         var value = regionFullValue(state, region);
         // but also take into account the threat other players pose to it, and the opportunities it offers
-        if (gameSetup.l != AI_EASY) {
-            value += (1.0 - regionThreat(state, player, region)) * threatOpportunityMultiplier * value +
-                regionOpportunity(state, player, region) * threatOpportunityMultiplier;
-        }
+        value += (1.0 - regionThreat(state, player, region)) * threatOpportunityMultiplier * value +
+            regionOpportunity(state, player, region) * threatOpportunityMultiplier;
         // and the soldiers on it
         value += soldierCount(state, region) * soldierBonus;
 
@@ -1384,6 +1382,9 @@ function regionFullValue(state, region) {
 }
 
 function regionThreat(state, player, region) {
+    var aiLevel = gameSetup.l;
+    if (gameSetup.l == AI_NICE) return 0; // 'nice' AI doesn't consider threat
+
     var ourPresence = soldierCount(state, region);
     var enemyPresence = max(map(region.n, function(neighbour) {
         // is this an enemy region?
@@ -1392,11 +1393,12 @@ function regionThreat(state, player, region) {
 
         // count soldiers that can reach us in 3 moves from this direction
         // using a breadth-first search
-        var queue = [{r: neighbour, d: 2}], visited = [];
+        var depth = (aiLevel == AI_RUDE) ? 0 : 2; // 'rude' AI only looks at direct neighbours, harder AIs look at all soldiers that can reach us
+        var queue = [{r: neighbour, d: depth}], visited = [];
         var total = 0;
         while (queue.length) {
             var entry = queue.shift();
-            total += soldierCount(state, entry.r) * (2 + entry.d) / 4; // soldiers further away count for less
+            total += soldierCount(state, entry.r) * ((aiLevel > AI_RUDE) ? (2 + entry.d) / 4 : 1); // soldiers further away count for less (at least if your AI_MEAN)
             visited.push(entry.r);
 
             if (entry.d) {
@@ -1412,10 +1414,14 @@ function regionThreat(state, player, region) {
 
         return total;
     }));
+    console.log("ENEMY PRESENCE: " + enemyPresence);
     return clamp((enemyPresence / (ourPresence+0.0001) - 1) / 1.5, 0, 1.1);
 }
 
 function regionOpportunity(state, player, region) {
+    // the 'nice' AI doesn't see opportunities
+    if (gameSetup.l == AI_NICE) return 0;
+
     // how much conquest does this region enable?
     var attackingSoldiers = soldierCount(state, region);
     if (!attackingSoldiers)
@@ -1837,7 +1843,7 @@ function income(state, player) {
         return soldierCount(state, temple.r);
     });
     var multiplier = 1.0 + 0.01 * upgradeLevel(state, player, WATER);
-    if ((player.u == aiPickMove) && (gameSetup.l == AI_UNFAIR))
+    if ((player.u == aiPickMove) && (gameSetup.l == AI_EVIL))
         multiplier += 0.4;
     return ceil(multiplier * (fromRegions + fromTemples));
 }
@@ -1955,7 +1961,7 @@ function performUndo(currentState) {
 
 var defaultSetup = {
     p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF],
-    l: AI_EASY,
+    l: AI_NICE,
     s: true,
     tc: 12
 };
@@ -1998,7 +2004,7 @@ function prepareSetupUI() {
         });
     }).join("");
     html += div({i: 'pd', c: 'sc un'}, playerBoxes);
-    html += buttonPanel("AI level", "ai", ["Unfair", "Tough", "Easy"]);
+    html += buttonPanel("AI", "ai", ["Evil", "Mean", "Rude", "Nice"]);
     html += buttonPanel("Turns", "tc", ["Endless", "15", "12", "9"]);
 
     // realize the UI
@@ -2011,7 +2017,7 @@ function prepareSetupUI() {
     for2d(0, 0, PLAYER_TEMPLATES.length, 3, function(playerIndex, buttonIndex) {
         onClickOrTap($('sb' + playerIndex + buttonIndex), invokeUICallback.bind(0, {p: playerIndex, b: buttonIndex}, 'sb'));
     });
-    map(range(0,3), function(index) {
+    map(range(0,4), function(index) {
         onClickOrTap($('ai' + index), invokeUICallback.bind(0, index, 'ai'));
         onClickOrTap($('tc' + index), invokeUICallback.bind(0, TURN_COUNTS[index], 'tc'));
     });
@@ -2098,7 +2104,7 @@ function runSetupScreen() {
         });
 
         // update AI and turn count buttons
-        map(range(0,3), function(index) {
+        map(range(0,4), function(index) {
            $('ai' + index).classList[(index == gameSetup.l) ? 'add' : 'remove']('sl');
            $('tc' + index).classList[(TURN_COUNTS[index] == gameSetup.tc) ? 'add' : 'remove']('sl');
         });
