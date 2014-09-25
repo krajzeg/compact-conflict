@@ -472,6 +472,9 @@ function showMap(container, gameState) {
 
         region.hl = $('hl' + index);
         onClickOrTap(region.hl, invokeUICallback.bind(0, region, 'c'));
+
+        region.hl.oncontextmenu = debug.bind(0, region);
+        region.e.oncontextmenu = debug.bind(0, region);
     });
 
     // additional callbacks for better UI
@@ -1273,6 +1276,7 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
             var elapsedTime = now() - timeStart;
             if (elapsedTime > maximumAIThinkingTime) {
                 currentNode = null;
+                console.log("Maximum thinking time elapsed!");
             }
 
             if (!currentNode) {
@@ -1343,7 +1347,7 @@ function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffPoint) {
 }
 
 function heuristicForPlayer(player, state) {
-    var soldierBonus = slidingBonus(state, 0.33, 0, 0.83),
+    var soldierBonus = slidingBonus(state, 0.16, 0, 0.83),
         threatOpportunityMultiplier = slidingBonus(state, 1.0, 0.0, 0.83);
 
     function adjustedRegionValue(region) {
@@ -1380,11 +1384,34 @@ function regionFullValue(state, region) {
 
 function regionThreat(state, player, region) {
     var ourPresence = soldierCount(state, region);
-    var enemyPresence = sum(region.n, function(neighbour) {
+    var enemyPresence = max(map(region.n, function(neighbour) {
+        // is this an enemy region?
         var nOwner = owner(state, neighbour);
-        return (nOwner && (nOwner != player)) ? soldierCount(state, neighbour) : 0;
-    });
-    return clamp((enemyPresence / (ourPresence+0.0001) - 1) * 0.5, 0, 0.9);
+        if ((nOwner == player) || !nOwner) return 0;
+
+        // count soldiers that can reach us in 3 moves from this direction
+        // using a breadth-first search
+        var queue = [{r: neighbour, d: 2}], visited = [];
+        var total = 0;
+        while (queue.length) {
+            var entry = queue.shift();
+            total += soldierCount(state, entry.r) * (2 + entry.d) / 4; // soldiers further away count for less
+            visited.push(entry.r);
+
+            if (entry.d) {
+                // go deeper with the search
+                map(entry.r.n.filter(function(candidate) {
+                    return (!contains(visited, candidate)) &&
+                        (owner(state, candidate) == nOwner);
+                }), function(r) {
+                    queue.push({r: r, d: entry.d-1});
+                });
+            }
+        }
+
+        return total;
+    }));
+    return clamp((enemyPresence / (ourPresence+0.0001) - 1) / 3, 0, 0.9);
 }
 
 function regionOpportunity(state, player, region) {
@@ -1408,6 +1435,12 @@ function gimmeMoney() {
         displayedState.c[index] += 500;
     });
     updateDisplay(displayedState);
+}
+
+function debug(region) {
+    var regionOwner = owner(displayedState, region);
+    console.log("THREAT:" + regionThreat(displayedState, regionOwner, region));
+    return false;
 }
 
 // ==========================================================
@@ -2271,3 +2304,4 @@ window.onload = function() {
         setupTitleScreen();
     }, 500);
 };
+
