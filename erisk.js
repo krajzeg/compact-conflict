@@ -46,8 +46,8 @@ var UPGRADES = [
 
 // === Constants for setup screen
 var PLAYER_OFF = 0, PLAYER_HUMAN = 1, PLAYER_AI = 2;
-var AI_EASY = 0, AI_NORMAL = 1, AI_UNFAIR = 2;
-var UNLIMITED_TURNS = 1000000, TURN_COUNTS = [12, 15, UNLIMITED_TURNS];
+var AI_EASY = 0, AI_TOUGH = 1, AI_UNFAIR = 2;
+var UNLIMITED_TURNS = 1000000, TURN_COUNTS = [9, 12, 15, UNLIMITED_TURNS];
 
 // == Application "states"
 var APP_SETUP_SCREEN = 0, APP_INGAME = 1;
@@ -1330,7 +1330,8 @@ function possibleMoves(state) {
     return moves;
 }
 
-function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
+function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffPoint) {
+    var dropOffTurn = dropOffPoint * gameSetup.tc;
     var alpha = (state.m.t - dropOffTurn) / (gameSetup.tc - dropOffTurn);
     if (alpha < 0.0)
         alpha = 0.0;
@@ -1338,8 +1339,8 @@ function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffTurn) {
 }
 
 function heuristicForPlayer(player, state) {
-    var soldierBonus = slidingBonus(state, 0.33, 0, 10),
-        threatOpportunityMultiplier = slidingBonus(state, 1.0, 0.0, 10);
+    var soldierBonus = slidingBonus(state, 0.33, 0, 0.83),
+        threatOpportunityMultiplier = slidingBonus(state, 1.0, 0.0, 0.83);
 
     function adjustedRegionValue(region) {
         // count the value of the region itself
@@ -1361,8 +1362,14 @@ function heuristicForPlayer(player, state) {
 }
 
 function regionFullValue(state, region) {
-    var templeBonus = slidingBonus(state, 8, 0, 1);
-    return 1 + (state.t[region.i] ? templeBonus : 0);
+    var temple = state.t[region.i];
+    if (temple) {
+        var templeBonus = slidingBonus(state, 8, 0, 0.1);
+        var templeMultiplier = temple.u ? (1.5 + temple.l * 0.5) : 1;
+        return 1 + templeBonus * templeMultiplier;
+    } else {
+        return 1;
+    }
 }
 
 function regionThreat(state, player, region) {
@@ -1951,7 +1958,7 @@ function prepareSetupUI() {
     }).join("");
     html += div({i: 'pd', c: 'sc un'}, playerBoxes);
     html += buttonPanel("AI level", "ai", ["Unfair", "Tough", "Easy"]);
-    html += buttonPanel("Turn count", "tc", ["Unlimited", "15", "12"]);
+    html += buttonPanel("Turns", "tc", ["Endless", "15", "12", "9"]);
 
     // realize the UI
     $('d').innerHTML = html;
