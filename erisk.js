@@ -172,6 +172,13 @@ function elem(tag,attrs,contents) {
 	return html;
 }
 
+// Appends new HTML to a container with the designated ID, and returns the resulting DOM node.
+function append(containerId, newHTML) {
+    var container = $(containerId);
+    container.insertAdjacentHTML('beforeend', newHTML);
+    return container.lastChild;
+}
+
 // Sets the 'transform' CSS property to a given value (also setting prefixed versions).
 function setTransform(elem, value) {
     elem.style.transform = value;
@@ -508,14 +515,12 @@ function showMap(container, gameState) {
 
             // create the temple <div>s
             var templeHTML = div({
-                i: id,
                 c: 'o',
                 s: style
             }, div({c: 'i'}, div({c: 'i'}, div({c: 'i'}, div({c: 'i'})))));
-            container.insertAdjacentHTML('beforeend', templeHTML);
+            temple.e = append('m', templeHTML);
 
             // retrieve elements and bind callbacks
-            temple.e = $(''+id);
             onClickOrTap(temple.e, invokeUICallback.bind(0, temple.r, 't'));
         });
     }
@@ -773,6 +778,7 @@ function updateMapDisplay(gameState) {
 
         region.e.style.fill = 'url(#' + gradientName + ')';
     }
+
     function updateTooltips() {
         map(doc.querySelectorAll('.tt'), $('m').removeChild.bind($('m')));
         if (activePlayer(gameState).u != uiPickMove) return;
@@ -799,6 +805,7 @@ function updateMapDisplay(gameState) {
             showTooltipOver({c:[90,93]}, "If you want to undo a move or check the rules, use the buttons here.", 15);
         }
     }
+
     function showTooltipOver(region, text, width) {
         if (gameSetup.tt[text]) return;
         setTimeout(function() {
@@ -810,9 +817,9 @@ function updateMapDisplay(gameState) {
         var left = region.c[0] - (width+1) * 0.5, bottom = 102 - region.c[1];
         var styles = 'bottom: ' + bottom + '%; left: ' + left + '%; width: ' + width + '%';
 
-        var tooltip = div({c: 'tt', s: styles}, text);
-        $('m').insertAdjacentHTML('beforeend', tooltip);
+        append('m', div({c: 'tt', s: styles}, text));
     }
+
     function updateTempleDisplay(temple) {
         var element = temple.e;
 
@@ -834,6 +841,7 @@ function updateMapDisplay(gameState) {
         var selected = gameState.d && gameState.d.w == temple;
         temple.e.classList[selected ? 'add' : 'remove']('l');
     }
+
     function updateSoldierDisplay(region, soldier, index) {
         // we're still alive, so no removing our <div>
         soldiersStillAlive.push(soldier.i);
@@ -842,9 +850,8 @@ function updateMapDisplay(gameState) {
         var domElement = soldierDivsById[soldier.i];
         if (!domElement) {
             var html = div({c: 's', s: 'display: none'});
-            var container = $('m');
-            container.insertAdjacentHTML('beforeEnd', html);
-            domElement = soldierDivsById[soldier.i] = container.lastChild;
+
+            domElement = soldierDivsById[soldier.i] = append('m', html);
             domElement.onclick = invokeUICallback.bind(0, soldier, 's');
         }
 
@@ -955,16 +962,15 @@ function updateButtons(buttons) {
     $('u').innerHTML = '';
     map(buttons || [], function(button, index) {
         if (button.h) return;
-        var id = 'b' + index;
 
         var buttonContents = div({}, button.t);
         if (button.d)
             buttonContents += div({c: 'ds'}, button.d);
 
-        var buttonHTML = elem('a', {href: '#', i: id, c: button.o ? 'off' : ''}, buttonContents);
-        $('u').insertAdjacentHTML('beforeend', buttonHTML);
+        var buttonHTML = elem('a', {href: '#', c: button.o ? 'off' : ''}, buttonContents);
+        var buttonNode = append('u', buttonHTML);
         if (!button.o) {
-            onClickOrTap($(id), invokeUICallback.bind(0, index, 'b'));
+            onClickOrTap(buttonNode, invokeUICallback.bind(0, index, 'b'));
         }
     });
 }
@@ -985,15 +991,12 @@ function updateDisplay(gameState) {
     }
 }
 
-var bannerCounter = 1;
 function showBanner(background, text, delay) {
     delay = delay || 1;
     oneAtATime(delay, function() {
         // create a new banner div
-        var id = 'bn' + bannerCounter++;
-        $('c').insertAdjacentHTML('beforeend', div({i: id, c: 'bn'}, text));
-
-        var banner = $(id), styles = banner.style;
+        var banner = append('c', div({c: 'bn'}, text)),
+            styles = banner.style;
 
         styles.background = background;
         styles.opacity = 0.0;
@@ -1008,6 +1011,15 @@ function showBanner(background, text, delay) {
     function transform(offset) {
         return "translate3d(1.2em," + offset + "em,0) rotateY(" + (10 + offset * 2) + "deg)";
     }
+}
+
+function spawnParticle(x, y, color) {
+    var styles = "opacity:1;left: " + x + "%;top: " + y + "%;box-shadow: 0 0 3px 3px " + color;
+    var particle = append('m', div({c: 'pr', s: styles}, ''));
+    setTimeout(function() {
+        particle.style.top = (y-10) + "%";
+        particle.style.opacity = 0.0;
+    }, 10);
 }
 
 function preserveAspect() {

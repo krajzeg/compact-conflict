@@ -172,7 +172,7 @@
 
             transition: opacity 0.5s ease-in-out, transform 1.5s linear, -webkit-transform 1.5s linear;
         }
-        a,.o,.i,.s,.pl,.pi,#in,polygon {
+        a,.o,.i,.s,.pl,.pi,.pr,#in,polygon {
             transition: all 0.15s ease-in-out;
         }
         p {
@@ -250,6 +250,15 @@
             padding: 0.4em;
             opacity: 0.8;
             pointer-events: none;
+        }
+
+        /* Particles! */
+        .pr {
+            position: absolute;
+            width: 0;
+            height: 0;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         /* Tutorial slider styles */
