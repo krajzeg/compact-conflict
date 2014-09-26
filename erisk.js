@@ -1493,7 +1493,6 @@ function regionThreat(state, player, region) {
 
         return total;
     }));
-    console.log("ENEMY PRESENCE: " + enemyPresence);
     return clamp((enemyPresence / (ourPresence+0.0001) - 1) / 1.5, 0, 1.1);
 }
 
@@ -1788,8 +1787,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 delete temple.u;
             // play sound, launch particles!
             state.prt = toRegion;
-            if (defendingSoldiers)
-                state.sc = audioVictory;
+            state.sc = defendingSoldiers ? audioVictory : audioTakeOver;
         }
     }
 
@@ -2328,7 +2326,7 @@ function makeBuffer(fn, len, vol) {
 }
 
 var audioCtx = window.AudioContext && (new AudioContext());
-var audioClick, audioEnemyDead, audioOursDead, audioVictory, audioDefeat;
+var audioClick, audioEnemyDead, audioOursDead, audioVictory, audioDefeat, audioTakeOver;
 function setupAudio() {
     // do we have WebAudio?
     if (!audioCtx)
@@ -2344,6 +2342,9 @@ function setupAudio() {
     audioOursDead = makeBuffer(adsr(0.01, 0.05, 0.05, 0.05, 0.5,
         wSlide(1.0, 0.3, 0.1, wSin(200))
     ), 0.2, 0.6);
+    audioTakeOver = makeBuffer(wNotes([
+        {t:0, p:261,d:1},{t:0.1, p:329, d:2}     // C-E
+    ]), 0.6, 0.2);
     audioVictory = makeBuffer(wNotes([
         {t:0, p:261,d:1},{t:0.0, p:329, d:2},{t:0.0, p:392, d:3},     // C-E-G
         {t:0.2, p:261,d:1},{t:0.2, p:349, d:2},{t:0.2, p:440, d:3}    // C-F-A
