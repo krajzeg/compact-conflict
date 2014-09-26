@@ -765,8 +765,8 @@ function updateMapDisplay(gameState) {
         if (highlighted) {
             gradientName += 'h';
         }
-        var highlightedOpacity = 0.08 + region.c[0] * 0.003;
-        if (gameState.e)
+        var highlightedOpacity = 0.1 + region.c[0] * 0.003;
+        if (gameState.e || (gameState.d && gameState.d.s == region))
             highlightedOpacity *= 2;
         region.hl.style.opacity = highlighted ? highlightedOpacity : 0.0;
         region.hl.style.cursor = highlighted ? 'pointer' : 'default';
