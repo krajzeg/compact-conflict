@@ -172,7 +172,7 @@
 
             transition: opacity 0.5s ease-in-out, transform 1.5s linear, -webkit-transform 1.5s linear;
         }
-        a,.o,.i,.s,.pl,.pi,.pr,#in,polygon {
+        a,.o,.i,.s,.pl,.pi,#in,polygon {
             transition: all 0.15s ease-in-out;
         }
         p {
@@ -257,8 +257,9 @@
             position: absolute;
             width: 0;
             height: 0;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
+            transform: translate3d(0,0,0);
+            -webkit-transform: translate3d(0,0,0);
+            transition: all 1s;
         }
 
         /* Tutorial slider styles */
