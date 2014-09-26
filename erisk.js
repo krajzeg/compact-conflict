@@ -1832,6 +1832,9 @@ function buildUpgrade(state, region, upgrade) {
     // you have to pay for it, unfortunately
     state.c[templeOwner.i] -= upgrade.c[temple.l];
 
+    // particles!
+    state.prt = temple.r;
+    
     // the AIR upgrade takes effect immediately
     if (upgrade == AIR)
         state.m.l++;
