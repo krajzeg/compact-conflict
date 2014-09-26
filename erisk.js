@@ -925,12 +925,13 @@ function updateIngameUI(gameState) {
             else
                 info = '';
         } else if (movingArmy) {
-            info = elem('p', {}, 'Click on a target region to move your army.') +
-                elem('p', {}, 'Click on the source region to choose how many to move.');
+            info = elem('p', {}, 'Click on this region again to choose how many to move.') +
+                elem('p', {}, 'Click on a target region to move the army.');
+
         } else {
 
-            info = elem('p', {}, "Click on a region to move or attack with its army.") +
-                elem('p', {}, "Click on a temple to buy soldiers or upgrades with &#9775;.");
+            info = elem('p', {}, 'Click on a region to move or attack with its army.') +
+                elem('p', {}, 'Click on a temple to buy soldiers or upgrades with &#9775;.');
         }
     } else {
         info = elem('p', {}, active.n + ' is taking her turn.');
