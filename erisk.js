@@ -755,7 +755,13 @@ function updateMapDisplay(gameState) {
             // this is an ex-div - in other words, the soldier it represented is dead
             $('m').removeChild(div);
             delete soldierDivsById[id]; // surprisingly, this should be safe to do during iteration - http://stackoverflow.com/a/19564686
-            
+
+            // spawn some particles
+            var x = parseFloat(div.style.left), y = parseFloat(div.style.top);
+            map(range(0,20), function() {
+                var angle = Math.random() * 6.28, dist = rint(0,100) / 80;
+                spawnParticle(x + sin(angle) * dist, y + cos(angle) * dist, 0, -1, '#000');
+            });
         }
     });
 
