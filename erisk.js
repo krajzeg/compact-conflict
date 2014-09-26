@@ -753,6 +753,8 @@ function updateMapDisplay(gameState) {
         }
     });
 
+    updateTooltips();
+
     function updateRegionDisplay(region) {
         var regionOwner = owner(gameState, region);
         var gradientName = (regionOwner ? 'p' + regionOwner.i : 'l');
@@ -770,7 +772,46 @@ function updateMapDisplay(gameState) {
         region.hl.style.cursor = highlighted ? 'pointer' : 'default';
 
         region.e.style.fill = 'url(#' + gradientName + ')';
+    }
+    function updateTooltips() {
+        map(doc.querySelectorAll('.tt'), $('m').removeChild.bind($('m')));
+        if (activePlayer(gameState).u != uiPickMove) return;
 
+        // "how to move" tooltips
+        var source = gameState.d && gameState.d.s;
+        if (source)  {
+            showTooltipOver(source, "Click this region again to change the number of soldiers.");
+            // pick the furthest neighbour
+            var furthest = max(source.n, function(neighbour) {
+                return Math.abs(source.c[0]-neighbour.c[0]) + Math.abs(source.c[1] - neighbour.c[1]);
+            });
+            showTooltipOver(furthest, "Click a bordering region to move.");
+        }
+        if (!source) {
+            // "conquering armies cannot move" tooltips
+            var inactiveArmies = gameState.m.z;
+            if (inactiveArmies) {
+                showTooltipOver(inactiveArmies[inactiveArmies.length-1], "Armies that conquer a new region cannot move again.")
+                showTooltipOver({c: [-2, 80]}, "Once you're done, click 'End turn' here.");
+            }
+        }
+        if (gameState.m.t == 2 && gameState.m.l == 2) {
+            showTooltipOver({c:[90,93]}, "If you want to undo a move or check the rules, use the buttons here.", 15);
+        }
+    }
+    function showTooltipOver(region, text, width) {
+        if (gameSetup.tt[text]) return;
+        setTimeout(function() {
+            gameSetup.tt[text] = 1; // don't display it again (timeout to handle multiple updateDisplays() in a row)
+            storeSetupInLocalStorage(gameSetup);
+        }, 500);
+
+        width = width || 7;
+        var left = region.c[0] - (width+1) * 0.5, bottom = 102 - region.c[1];
+        var styles = 'bottom: ' + bottom + '%; left: ' + left + '%; width: ' + width + '%';
+
+        var tooltip = div({c: 'tt', s: styles}, text);
+        $('m').insertAdjacentHTML('beforeend', tooltip);
     }
     function updateTempleDisplay(temple) {
         var element = temple.e;
@@ -1963,7 +2004,8 @@ var defaultSetup = {
     p: [PLAYER_HUMAN, PLAYER_AI, PLAYER_AI, PLAYER_OFF],
     l: AI_NICE,
     s: true,
-    tc: 12
+    tc: 12,
+    tt: {}
 };
 var gameSetup = getSetupFromStorage();
 var appState = 0;
@@ -1986,9 +2028,9 @@ function getSetupFromStorage() {
 }
 
 // Tries to store user preferences in local storage.
-function storeSetupInLocalStorage(setup) {
+function storeSetupInLocalStorage() {
     if (localStorage) {
-        localStorage.setItem("s", JSON.stringify(setup));
+        localStorage.setItem("s", JSON.stringify(gameSetup));
     }
 }
 
