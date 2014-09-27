@@ -1714,13 +1714,14 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
         }
 
         if (preemptiveDamage) {
+            // animate it
+            battleAnimationKeyframe(state, 50, audioOursDead, [{s: fromList[0], t: "Earth kills " + preemptiveDamage + "!", c: EARTH.b, w: 9}]);
             // apply it
             map(range(0, preemptiveDamage), function () {
                 fromList.shift();
                 incomingSoldiers--;
             });
-            // animate it
-            battleAnimationKeyframe(state, 800, audioOursDead, [{s: fromList[0], t: "Earth kills " + preemptiveDamage + "!", c: EARTH.b, w: 9}]);
+            battleAnimationKeyframe(state);
         }
 
         // if there is still defense and offense, let's have a fight
