@@ -553,7 +553,7 @@ function prepareIngameUI(gameState) {
     $('d').innerHTML = html;
 
     // show stat box and undo button
-    map(['mv', 'und'], show);
+    map(['mv', 'und', 'end'], show);
 }
 
 // ==========================================================
@@ -2120,7 +2120,7 @@ function prepareSetupUI() {
     $('d').innerHTML = html;
 
     // hide stat box and undo button
-    map(['mv', 'und'], hide);
+    map(['mv', 'und', 'end'], hide);
 
     // setup callbacks for players
     for2d(0, 0, PLAYER_TEMPLATES.length, 3, function(playerIndex, buttonIndex) {
@@ -2243,6 +2243,11 @@ function setupTitleScreen() {
     onClickOrTap($('tub'), setTitleScreenVisibility.bind(0,true));
     onClickOrTap($('snd'), toggleSound);
     onClickOrTap($('und'), invokeUICallback.bind(0, 0, 'un'));
+    onClickOrTap($('end'), function() {
+        uiCallbacks = {};
+        updateDisplay(displayedState);
+        runSetupScreen();
+    });
 
     switchTutorialCard(0);
 
