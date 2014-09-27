@@ -874,7 +874,7 @@ function updateMapDisplay(gameState) {
             var html = div({c: 's', s: 'display: none'});
 
             domElement = soldierDivsById[soldier.i] = append('m', html);
-            domElement.onclick = invokeUICallback.bind(0, soldier, 's');
+            onClickOrTap(domElement, invokeUICallback.bind(0, soldier, 's'));
         }
 
         // (re)calculate where the <div> should be
@@ -886,9 +886,9 @@ function updateMapDisplay(gameState) {
 
         var x = index % 4, y = floor(index / 4);
         var xOffset = (-0.6 * columnWidth + x * 1.2);
-        var yOffset = y * rowHeight;
-        var xPosition = center[0] + xOffset - yOffset * 0.2 - 0.3;
-        var yPosition = center[1] + 1.5 + xOffset * 0.2 + yOffset;
+        var yOffset = y * rowHeight + (gameState.t[region.i] ? 1.5 : 0);
+        var xPosition = center[0] + xOffset - yOffset * 0.2;
+        var yPosition = center[1] + xOffset * 0.2 + yOffset;
 
         if (soldier.a) {
             // we're attacking right now - move us closer to target region
@@ -1426,15 +1426,15 @@ function slidingBonus(state, startOfGameValue, endOfGameValue, dropOffPoint) {
 }
 
 function heuristicForPlayer(player, state) {
-    var soldierBonus = slidingBonus(state, 0.16, 0, 0.83),
+    var soldierBonus = slidingBonus(state, 0.25, 0, 0.83),
         threatOpportunityMultiplier = slidingBonus(state, 1.0, 0.0, 0.83);
 
     function adjustedRegionValue(region) {
         // count the value of the region itself
         var value = regionFullValue(state, region);
         // but also take into account the threat other players pose to it, and the opportunities it offers
-        value += (1.0 - regionThreat(state, player, region)) * threatOpportunityMultiplier * value +
-            regionOpportunity(state, player, region) * threatOpportunityMultiplier;
+        value += regionOpportunity(state, player, region) * threatOpportunityMultiplier -
+                 regionThreat(state, player, region) * threatOpportunityMultiplier * value;
         // and the soldiers on it
         value += soldierCount(state, region) * soldierBonus;
 
@@ -1493,7 +1493,7 @@ function regionThreat(state, player, region) {
 
         return total;
     }));
-    return clamp((enemyPresence / (ourPresence+0.0001) - 1) / 1.5, 0, 1.1);
+    return clamp((enemyPresence / (ourPresence+0.0001) - 1) / 1.5, 0, (aiLevel == AI_RUDE) ? 0.5 : 1.1);
 }
 
 function regionOpportunity(state, player, region) {
@@ -1834,7 +1834,7 @@ function buildUpgrade(state, region, upgrade) {
 
     // particles!
     state.prt = temple.r;
-    
+
     // the AIR upgrade takes effect immediately
     if (upgrade == AIR)
         state.m.l++;
