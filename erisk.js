@@ -1038,12 +1038,16 @@ function showBanner(background, text, delay) {
 function spawnParticle(x, y, vx, vy, color) {
     var styleString = "opacity:1;left: " + x + "%;top: " + y + "%;box-shadow: 0 0 1px 1px " + color;
     var particle = append('m', div({c: 'pr', s: styleString}, ''));
+    floatAway(particle, vx, vy);
+}
+
+function floatAway(elem, vx, vy) {
     setTimeout(function() {
-        setTransform(particle, "translate3d(" + vx + "em," + vy + "em,0)");
-        particle.style.opacity = 0.0;
-    }, 10);
+        setTransform(elem, "translate3d(" + vx + "em," + vy + "em,0)");
+        elem.style.opacity = 0.0;
+    }, 50);
     setTimeout(function() {
-        $('m').removeChild(particle);
+        $('m').removeChild(elem);
     }, 1050);
 }
 
