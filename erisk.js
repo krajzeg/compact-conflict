@@ -485,9 +485,6 @@ function showMap(container, gameState) {
 
         region.hl = $('hl' + index);
         onClickOrTap(region.hl, invokeUICallback.bind(0, region, 'c'));
-
-        region.hl.oncontextmenu = debug.bind(0, region);
-        region.e.oncontextmenu = debug.bind(0, region);
     });
 
     // additional callbacks for better UI
@@ -1385,7 +1382,6 @@ function performMinMax(forPlayer, fromState, depth, moveCallback) {
             var elapsedTime = now() - timeStart;
             if (elapsedTime > maximumAIThinkingTime) {
                 currentNode = null;
-                console.log("Maximum thinking time elapsed!");
             }
 
             if (!currentNode) {
@@ -1543,20 +1539,6 @@ function regionOpportunity(state, player, region) {
             return 0;
         }
     });
-}
-
-function gimmeMoney() {
-    map(displayedState.p, function(_, index) {
-        displayedState.c[index] += 500;
-    });
-    updateDisplay(displayedState);
-}
-
-function debug(region) {
-    var regionOwner = owner(displayedState, region);
-    console.log("THREAT:" + regionThreat(displayedState, regionOwner, region));
-    console.log("VALUE:" + regionFullValue(displayedState, region));
-    return false;
 }
 
 // ==========================================================
@@ -1738,7 +1720,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 incomingSoldiers--;
             });
             // animate it
-            battleAnimationKeyframe(state, 1500, audioOursDead, [{s: fromList[0], t: "Earth kills " + preemptiveDamage + "!", c: EARTH.b, w: 9}]);
+            battleAnimationKeyframe(state, 800, audioOursDead, [{s: fromList[0], t: "Earth kills " + preemptiveDamage + "!", c: EARTH.b, w: 9}]);
         }
 
         // if there is still defense and offense, let's have a fight
