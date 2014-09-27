@@ -1875,7 +1875,10 @@ function nextTurn(state) {
 	var player = activePlayer(state);
 	
 	// cash is produced
-	state.c[player.i] += income(state, player);
+    var playerIncome = income(state, player);
+    if (playerIncome) {
+        state.flt = [{r: temples(state, player)[0].r, t: "+" + playerIncome + "&#9775;", c: '#fff', w: 5}];
+    }
 
 	// temples produce one soldier per turn automatically
 	forEachProperty(state.t, function(temple, regionIndex) {
@@ -1948,10 +1951,14 @@ function soldierCount(state, region) {
 }
 
 function income(state, player) {
+    // no income with no temples
+    var playerTemples = temples(state,player);
+    if (!playerTemples.length) return 0;
+
     // 1 faith per region
     var fromRegions = regionCount(state, player);
     // 1 faith per each soldier at temple (too much?)
-    var fromTemples = sum(temples(state,player), function(temple) {
+    var fromTemples = sum(playerTemples, function(temple) {
         return soldierCount(state, temple.r);
     });
     var multiplier = 1.0 + 0.01 * upgradeLevel(state, player, WATER);
