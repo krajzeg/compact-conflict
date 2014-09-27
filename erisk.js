@@ -513,10 +513,9 @@ function showMap(container, gameState) {
 
     // makes temple, which are just <div>s with nested <div>s (the towers)
     function makeTemples() {
-        forEachProperty(gameState.t, function(temple, index) {
+        forEachProperty(gameState.t, function(temple) {
 
             var center = temple.r.c,
-                id = 'tp' + index,
                 style = 'left:' + (center[0]-1.5) + '%;top:' + (center[1]-4) + '%';
 
             // create the temple <div>s
