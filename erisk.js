@@ -569,8 +569,11 @@ function invokeUICallback(object, type, event) {
         playSound(audioClick);
 		cb(object);
 	}
+    if (event.target.href && event.target.href != "#")
+        return 1;
+
     event.stopPropagation();
-	return false;
+	return 0;
 }
 
 // This is one of the "player controller" methods - the one that
