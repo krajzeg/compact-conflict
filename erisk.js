@@ -1755,12 +1755,6 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 }
 			});
 
-            // reset "attacking status" on the soldiers - at this point they will
-            // move back to the source region or occupy the destination
-            map(fromList, function(soldier) {
-                soldier.a = 0;
-            });
-
             // are there defenders left?
             if (toList.length) {
                 // and prevent anybody from moving in
@@ -1768,6 +1762,12 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 state.sc = audioDefeat;
             }
 		}
+
+        // reset "attacking status" on the soldiers - at this point they will
+        // move back to the source region or occupy the destination
+        map(fromList, function(soldier) {
+            soldier.a = 0;
+        });
 	}
 
 	if (incomingSoldiers > 0) {
