@@ -765,6 +765,7 @@ function updateMapDisplay(gameState) {
         }
     });
 
+    updateFloatingText();
     updateTooltips();
 
     function updateRegionDisplay(region) {
@@ -802,7 +803,7 @@ function updateMapDisplay(gameState) {
     }
 
     function updateTooltips() {
-        map(doc.querySelectorAll('.tt'), $('m').removeChild.bind($('m')));
+        map(doc.querySelectorAll('.ttp'), $('m').removeChild.bind($('m')));
         if (activePlayer(gameState).u != uiPickMove) return;
 
         // "how to move" tooltips
@@ -839,7 +840,7 @@ function updateMapDisplay(gameState) {
         var left = region.c[0] - (width+1) * 0.5, bottom = 102 - region.c[1];
         var styles = 'bottom: ' + bottom + '%; left: ' + left + '%; width: ' + width + '%';
 
-        append('m', div({c: 'tt', s: styles}, text));
+        append('m', div({c: 'tt ttp', s: styles}, text));
     }
 
     function updateTempleDisplay(temple) {
@@ -907,6 +908,26 @@ function updateMapDisplay(gameState) {
             domElement.classList.add('l');
         else
             domElement.classList.remove('l');
+    }
+
+    function updateFloatingText() {
+        map(gameState.flt || [], function(floater) {
+            var x, y;
+            if (floater.r) {
+                x = floater.r.c[0]; y = floater.r.c[1];
+            } else {
+                var node = soldierDivsById[floater.s.i];
+                x = parseFloat(node.style.left) + 0.2, y = parseFloat(node.style.top) + 0.2;
+            }
+
+            x -= floater.w/2 + 0.5; y -= 4;
+
+            var styles = "left: " + x + "%;top:" + y + "%;color:" + floater.c + ";width:" + floater.w + "%";
+            var floatingNode = append('m', div({c: 'tt', s: styles}, floater.t));
+            setTransform(floatingNode, "translate3d(0,0,0)");
+            floatAway(floatingNode, 0, -3);
+        });
+        gameState.flt = 0;
     }
 }
 
@@ -1048,7 +1069,7 @@ function floatAway(elem, vx, vy) {
     }, 50);
     setTimeout(function() {
         $('m').removeChild(elem);
-    }, 1050);
+    }, 3050);
 }
 
 function preserveAspect() {
@@ -1593,7 +1614,8 @@ function copyState(state, simulatingPlayer) {
 		t: deepCopy(state.t, 2),
 		s: deepCopy(state.s, 3),
 		c: deepCopy(state.c, 1),
-        l: deepCopy(state.l, 1)
+        l: deepCopy(state.l, 1),
+        flt: state.flt
 		// and some others are completely omitted - namely 'd', the current 'move decision' partial state
 	};
 }
@@ -1711,7 +1733,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 incomingSoldiers--;
             });
             // animate it
-            battleAnimationKeyframe(state);
+            battleAnimationKeyframe(state, 1500, audioOursDead, [{s: fromList[0], t: "Earth kills " + preemptiveDamage + "!", c: EARTH.b, w: 9}]);
         }
 
         // if there is still defense and offense, let's have a fight
@@ -1749,6 +1771,8 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                         fromList.shift();
                         incomingSoldiers--;
                         battleAnimationKeyframe(state, 250, audioOursDead);
+                    } else {
+                        battleAnimationKeyframe(state, 800, audioOursDead, [{s: fromList[0], t: "Protected by Fire!", c: FIRE.b, w: 11}]);
                     }
                 } else {
                     // attacker wins, kill defender and pay the martyr bonus
@@ -1764,6 +1788,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 // and prevent anybody from moving in
                 incomingSoldiers = 0;
                 state.sc = audioDefeat;
+                state.flt = [{r: toRegion, c: toOwner ? toOwner.h : '#fff', t: "Defended!", w: 7}];
             }
 		}
 
@@ -1791,6 +1816,7 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
                 delete temple.u;
             // play sound, launch particles!
             state.prt = toRegion;
+            state.flt = [{r: toRegion, c: fromOwner.h, t: "Conquered!", w: 7}];
             state.sc = defendingSoldiers ? audioVictory : audioTakeOver;
         }
     }
@@ -1799,10 +1825,11 @@ function moveSoldiers(state, fromRegion, toRegion, incomingSoldiers) {
     state.m.l--;
 }
 
-function battleAnimationKeyframe(state, delay, soundCue) {
+function battleAnimationKeyframe(state, delay, soundCue, floatingTexts) {
     if (state.a) return;
     var keyframe = copyState(state);
     keyframe.sc = soundCue;
+    keyframe.flt = floatingTexts;
     oneAtATime(delay || 500, updateDisplay.bind(0, keyframe));
 }
 
