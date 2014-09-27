@@ -1608,8 +1608,7 @@ function copyState(state, simulatingPlayer) {
 }
 
 function playOneMove(state) {
-    // we're playing the game now
-    appState = APP_INGAME;
+    if (appState == APP_SETUP_SCREEN) return;
 
     // oneAtATime is used to ensure that all animations from previous moves complete before a new one is played
     oneAtATime(150, function() {
@@ -2165,6 +2164,7 @@ function runSetupScreen() {
         } else {
             prepareIngameUI(game);
             updateDisplay(game);
+            appState = APP_INGAME;
             playOneMove(game);
         }
     };
@@ -2245,6 +2245,7 @@ function setupTitleScreen() {
     onClickOrTap($('und'), invokeUICallback.bind(0, 0, 'un'));
     onClickOrTap($('end'), function() {
         uiCallbacks = {};
+        oaatQueue = [];
         updateDisplay(displayedState);
         runSetupScreen();
     });
