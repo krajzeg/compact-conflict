@@ -202,6 +202,12 @@ function showOrHide(elementId, visible) {
 function hide(elementId) { showOrHide(elementId, 0); }
 function show(elementId) { showOrHide(elementId, 1); }
 
+function toggleClass(element, className, on) {
+    if (typeof element == 'string')
+        element = $(element);
+    element.classList[on ? 'add' : 'remove'](className);
+}
+
 // ==========================================================
 // Working on sequences
 // ==========================================================
@@ -865,7 +871,7 @@ function updateMapDisplay(gameState) {
 
         // highlight?
         var selected = gameState.d && gameState.d.w == temple;
-        temple.e.classList[selected ? 'add' : 'remove']('l');
+        toggleClass(temple.e, 'l', selected);
     }
 
     function updateSoldierDisplay(region, soldier, index) {
@@ -907,10 +913,7 @@ function updateMapDisplay(gameState) {
 
         // selected?
         var decisionState = gameState.d || {};
-        if ((decisionState.s == region) && (index < decisionState.c))
-            domElement.classList.add('l');
-        else
-            domElement.classList.remove('l');
+        toggleClass(domElement, 'l', (decisionState.s == region) && (index < decisionState.c));
     }
 
     function updateFloatingText() {
@@ -1879,6 +1882,7 @@ function nextTurn(state) {
 	
 	// cash is produced
     var playerIncome = income(state, player);
+    state.c[player.i] += playerIncome;
     if (playerIncome) {
         state.flt = [{r: temples(state, player)[0].r, t: "+" + playerIncome + "&#9775;", c: '#fff', w: 5}];
     }
@@ -2222,14 +2226,14 @@ function runSetupScreen() {
         // update player buttons
         map(gameSetup.p, function(controller, playerIndex) {
            map(range(0,3), function(buttonIndex) {
-               $('sb' + playerIndex + buttonIndex).classList[(controller == buttonIndex) ? 'add' : 'remove']('sl');
+               toggleClass('sb' + playerIndex + buttonIndex, 'sl', (controller == buttonIndex));
            })
         });
 
         // update AI and turn count buttons
         map(range(0,4), function(index) {
-           $('ai' + index).classList[(index == gameSetup.l) ? 'add' : 'remove']('sl');
-           $('tc' + index).classList[(TURN_COUNTS[index] == gameSetup.tc) ? 'add' : 'remove']('sl');
+            toggleClass('ai' + index, 'sl', index == gameSetup.l);
+            toggleClass('tc' + index, 'sl', TURN_COUNTS[index] == gameSetup.tc);
         });
     }
 
@@ -2278,7 +2282,7 @@ function setTitleScreenVisibility(visible) {
     }
 
     setTimeout(function() {
-        $('ts').classList[visible ? 'remove' : 'add']('h');
+        toggleClass('ts', 'h', !visible);
     }, 50);
 
     if (!visible) {
