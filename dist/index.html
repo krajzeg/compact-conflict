@@ -11,9 +11,18 @@
 				color: #aaf;
 			}
 		</style>
+		<script>
+			window.onload = function() {
+				setTimeout(function() {
+					document.getElementById("message").style.display = "block";
+				}, 1000);
+			};
+		</script>
 	</head>
 	<body>
-		<p>The game has been moved to <a href="http://wasyl.eu/games/compact-conflict/play.html">http://wasyl.eu/games/compact-conflict/play.html</a>.</p>
-		<p>You should be redirected automatically, but if you're not, click the link above.</p>
+		<div id="message" style="display: none">
+			<p>The game has been moved to <a href="http://wasyl.eu/games/compact-conflict/play.html">http://wasyl.eu/games/compact-conflict/play.html</a>.</p>
+			<p>You should be redirected automatically, but if you're not, click the link.</p>
+		</div>
 	</body>
 </html>
