@@ -17,10 +17,10 @@ var MOVE_ARMY = 1, BUILD_ACTION = 2, END_TURN = 3;
 
 // === Player properties
 var PLAYER_TEMPLATES = [
-    {i:0, n: 'Amber', l: '#fd8', d:'#960', h: '#fd8', hd:'#a80'},
-    {i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944'},
-    {i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759'},
-    {i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484'}
+    {i:0, n: 'Amber', l: '#fd8', d:'#960', h: '#fd8', hd:'#a80', e: '&#9822;'},
+    {i:1, n: 'Crimson', l: '#f88', d:'#722', h: '#faa', hd:'#944', e: '&#9822;'},
+    {i:2, n: 'Lavender', l: '#d9d', d:'#537', h: '#faf', hd:'#759', e: '&#9822;'},
+    {i:3, n: 'Emerald', l: '#9d9', d:'#262', h: '#bfb', hd:'#484', e: '&#9822;'}
 ];
 
 // === Possible temple upgrades
@@ -468,6 +468,11 @@ function showMap(container, gameState) {
     var bottoms = makeRegionPolys('d', 'd', 1, 1, .05, .05);
     var shadows = makeRegionPolys('w', 'w', 1.05, 1.05, .2, .2, ' ');
     var highlighters = makeRegionPolys('hl', '', 1, 1, 0, 0, 'stroke:#fff;stroke-width:1.5;opacity:0.0;', 'clip');
+
+    // make background emblems
+    var texts = map(regions, function(region, index)) {
+    	elem('text', {i: "et" + index}, '');
+    }).join('');
 
     // replace the map container contents with the new map
     container.innerHTML = elem('svg', {
