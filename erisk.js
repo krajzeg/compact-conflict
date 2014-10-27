@@ -772,6 +772,7 @@ function updateMapDisplay(gameState) {
 
     updateFloatingText();
     updateTooltips();
+    updateSoldierTooltips();
 
     function updateRegionDisplay(region) {
         var regionOwner = owner(gameState, region);
@@ -910,6 +911,32 @@ function updateMapDisplay(gameState) {
         // selected?
         var decisionState = gameState.d || {};
         toggleClass(domElement, 'l', (decisionState.s == region) && (index < decisionState.c));
+    }
+
+    function updateSoldierTooltips() {
+
+        map(gameState.r, function(region) {
+            var tooltipId = 'sc' + region.i;
+            // delete previous tooltip, if present
+            var tooltip = $(tooltipId);
+            if (tooltip)
+                tooltip.parentNode.removeChild(tooltip);
+
+            // should we have a tooltip?
+            var count = soldierCount(gameState, region);
+            if (count > 8) {
+                var selected = gameState.d && gameState.d.c;
+                if (selected)
+                    count = selected + "<hr>" + count;
+
+                var tooltipHTML = div({
+                    i: tooltipId,
+                    c: 'tt stt',
+                    s: "left:" + (region.c[0]-1.5) + '%;top:' + (region.c[1] + 1.2) + '%'
+                }, count);
+                append('m', tooltipHTML);
+            }
+        });
     }
 
     function updateFloatingText() {
