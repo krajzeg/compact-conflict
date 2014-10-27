@@ -919,8 +919,6 @@ function updateMapDisplay(gameState) {
             var tooltipId = 'sc' + regionIndex;
             // delete previous tooltip, if present
             var tooltip = $(tooltipId);
-            if (tooltip)
-                tooltip.parentNode.removeChild(tooltip);
 
             // should we have a tooltip?
             var count = soldierCount(gameState, region);
@@ -932,12 +930,17 @@ function updateMapDisplay(gameState) {
                 if (selected)
                     count = selected + "<hr>" + count;
 
-                var tooltipHTML = div({
-                    i: tooltipId,
-                    c: 'tt stt',
-                    s: "left:" + (region.c[0]-1.5) + '%;top:' + (region.c[1] + 1.2) + '%'
-                }, count);
-                append('m', tooltipHTML);
+                if (!tooltip) {
+                    var tooltipHTML = div({
+                        i: tooltipId,
+                        c: 'tt stt',
+                        s: "left:" + (region.c[0] - 1.5) + '%;top:' + (region.c[1] + 1.2) + '%'
+                    }, '');
+                    tooltip = append('m', tooltipHTML);
+                }
+                tooltip.innerHTML = count;
+            } else if (tooltip) {
+                tooltip.parentNode.removeChild(tooltip);
             }
         });
     }
