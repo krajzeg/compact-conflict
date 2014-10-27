@@ -915,8 +915,8 @@ function updateMapDisplay(gameState) {
 
     function updateSoldierTooltips() {
 
-        map(gameState.r, function(region) {
-            var tooltipId = 'sc' + region.i;
+        map(gameState.r, function(region, regionIndex) {
+            var tooltipId = 'sc' + regionIndex;
             // delete previous tooltip, if present
             var tooltip = $(tooltipId);
             if (tooltip)
@@ -925,7 +925,10 @@ function updateMapDisplay(gameState) {
             // should we have a tooltip?
             var count = soldierCount(gameState, region);
             if (count > 8) {
-                var selected = gameState.d && gameState.d.c;
+                var selected = (gameState.d && (gameState.d.s == region)) ? gameState.d.c : 0;
+                selected += sum(gameState.s[regionIndex], function(soldier) {
+                    return soldier.a ? 1 : 0;
+                });
                 if (selected)
                     count = selected + "<hr>" + count;
 
