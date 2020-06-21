@@ -1382,7 +1382,7 @@ function minMaxReturnFromChild(node, child) {
         var activePlayer = node.s.p[node.s.m.p];
         var maximizingNode = activePlayer == node.a;
         // is the value from child better than what we have?
-        var better = (!node.b) || (maximizingNode && (child.v > node.v)) || ((!maximizingNode) && (child.v < node));
+        var better = (!node.b) || (maximizingNode && (child.v > node.v)) || ((!maximizingNode) && (child.v < node.v));
         if (better) {
             node.b = child.m;
             node.v = child.v;
